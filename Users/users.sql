@@ -7,7 +7,7 @@ CREATE TABLE Users (
     phoneNumber TEXT, 
     lastLoginDate TIMESTAMP,
     registrationDate TIMESTAMP NOT NULL, 
-    userType VARCHAR NOT NULL, 
+    userType VARCHAR NOT NULL CHECK (userType IN ('operator', 'administrator', 'user')), 
     status VARCHAR(9) NOT NULL CHECK (status IN ('active', 'suspended')), 
     isVerified BOOLEAN DEFAULT FALSE NOT NULL 
 );
