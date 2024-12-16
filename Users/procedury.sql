@@ -77,3 +77,42 @@ JOIN Users u ON l.userId = u.userId
 WHERE l.time >= CURRENT_TIMESTAMP - INTERVAL '1 day'
 ORDER BY l.time DESC;
 
+-- liczba użytkowników w każdym statusie (active, suspended itp.)
+
+SELECT status, COUNT(*) AS user_count
+FROM Users
+GROUP BY status;
+
+-- szczegóły konta użytkownika na podstawie emaila
+
+SELECT userId, name, surname, email, phoneNumber, registrationDate, status
+FROM Users
+WHERE email = 'example@example.com';
+
+-- wyświetlenie liczby aktywnych użytkowników z podziałem na role
+
+SELECT userType, COUNT(*) AS user_count
+FROM Users
+WHERE status = 'active'
+GROUP BY userType;
+
+-- użytkownicy, którzy nie logowali się w ciągu ostatnich 30 dni
+
+SELECT userId, name, surname, email, lastLoginDate
+FROM Users
+WHERE lastLoginDate < CURRENT_DATE - INTERVAL '30 days' OR lastLoginDate IS NULL;
+
+-- wyświetlenie 10 najnowszych logowań użytkowników
+
+SELECT l.userId, u.name, u.surname, l.activityType, l.time
+FROM Logs l
+JOIN Users u ON l.userId = u.userId
+WHERE l.activityType = 'login'
+ORDER BY l.time DESC
+LIMIT 10;
+
+-- policzenie liczby użytkowników zarejestrowanych w ostatnim miesiącu
+
+SELECT COUNT(*) AS registered_last_month
+FROM Users
+WHERE registrationDate >= CURRENT_DATE - INTERVAL '1 month';
