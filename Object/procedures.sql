@@ -1,163 +1,9 @@
---WIDOKI--------------
-
---nie jestem pewien czy potrzebne
---ogloszenia z domami i zdjęciami
-CREATE VIEW flatpol.selectAdsHousesPhotos AS
-SELECT a.id, a.title, o.id, o.description, p.id, p.photoURL, h.id, pr.price
-FROM Advertisement a
-JOIN Object o ON a.objectId = o.id
-JOIN Photos p ON o.photosID = p.id
-JOIN House h ON o.typeId IS NOT NULL AND o.typeId = h.id
-JOIN Price pr ON a.priceId = pr.id;
-
---ogloszenia z mieszkaniami i zdjęciami
-CREATE VIEW flatpol.selectAdsHousesPhotos AS
-SELECT a.id, a.title, o.id, o.description, p.id, p.photoURL, pr.price
-FROM Advertisement a
-JOIN Object o ON a.objectId = o.id
-JOIN Photos p ON o.photosID = p.id
-JOIN House h ON o.typeId IS NULL
-JOIN Price pr ON a.priceId = pr.id;
-
-
-
-
---wylistowanie wszystkiego zwiazanego z domem
-CREATE VIEW flatpol.selectAdsHousesPhotos AS
-SELECT a.*, o.*, p.*, h.*, pr.*, ad.*
-FROM Advertisement a
-LEFT JOIN Object o ON a.objectId = o.id
-LEFT JOIN Photos p ON o.photosId = p.id
-JOIN House h ON o.typeId IS NOT NULL AND o.typeId = h.id
-LEFT JOIN Price pr ON a.priceId = pr.id
-LEFT JOIN Address ad ON a.addressId = ad.id;
-
---wylistowanie wszystkiego zwiazanego z mieszkaniem
-CREATE VIEW flatpol.selectAdsFlatsPhotos AS
-SELECT o.*, p.*, pr.*, ad.*
-FROM Object
-LEFT JOIN Photos p ON o.photosId = p.id
-LEFT JOIN Price pr ON a.priceId = pr.id
-LEFT JOIN Address ad ON a.addressId = ad.id;
-
-
-
-
-
---wyszuaknie istotnych informacji od mieszkan
-CREATE VIEW flatpol.selectFlatsAll AS
-    SELECT o.id,
-    ph.photoURL,
-    o.description,
-    o.squareFootage,
-    o.rooms,
-    o.bathrooms,
-    o.floor
-    o.basementSquareFootage,
-    o.balconysquareFootage,
-FROM flatpol.object o
-LEFT JOIN flatpol.photos ph ON ph.id = o.photosId;
-
---wyszuaknie istotnych informacji od domow,
---to mozna dac jako SELECT * FROM selectFlatsALL WHERE
---np. o.bathrooms > 2 albo WHERE h.plotArea < 1000 ORDER BY h.plotArea DESC;
-CREATE VIEW flatpol.selectHousesAll AS
-    SELECT o.id,
-    ph.photoURL,
-    o.squareFootage,
-    o.description,
-    o.rooms,
-    o.bathrooms,
-    o.basementSquareFootage,
-    o.balconysquareFootage,
-    h.stories,
-    h.atticSquareFootage,
-    h.terraceSquareFootage,
-    h.plotArea
-FROM flatpol.object o
-JOIN flatpol.house h ON h.id = o.typeId
-LEFT JOIN flatpol.photos ph ON ph.id = o.photosId;
-
-
-
-
-
---wylistowanie cen
-CREATE VIEW flatpol.showPrices AS
-    SELECT
-    a.id,
-    pr.price,
-    pr.rent,
-    pr.media,
-    pr.typeOfPayment,
-    pr.deposit,
-    pr.typeOfOwner
-FROM flatpol.Advertisement
-JOIN flatpol.Price pr ON a.priceId = pr.id;
-
---sortowanie po cenach
-CREATE VIEW flatpol.showPrices AS
-    SELECT
-    a.id,
-    SUM(pr.price,
-    pr.rent,
-    pr.media) AS price_final
-FROM flatpol.Advertisement
-JOIN flatpol.Price pr ON a.priceId = pr.id
-ORDER BY price_final DESC;
-
-
-
---pod takie pokazanie na stronie
---wyszukanie opisów mieszkań
-CREATE VIEW flatpol.objectDesc AS
-SELECT a.id, o.id, o.description
-FROM flatpol.Advertisement a
-JOIN flatpol.Object o ON a.objectId = o.id;
-
-
---wylistowanie tylko zdjec
-CREATE VIEW flatpol.showOnlyPhotos AS
-    SELECT o.id, p.photoURL
-    FROM Object o
-    LEFT JOIN Photos p ON o.photosId = p.id;
-
-
---wylistowanie ilosci zdjec
-CREATE VIEW flatpol.photo_count_per_object AS
-SELECT o.id, COUNT(p.id)
-FROM object o
-LEFT JOIN photos p ON o.photosId = p.id
-GROUP BY o.id;
-
-
-
-
-
-
-
 --PROCEDURY----------------
---wyszukanie po konkretnym miescie
-CREATE PROCEDURE flatpol.searchHouseCity @City nvarchar(40)
-AS
-BEGIN
 
-SELECT * FROM flatpol.selectAdsHousesPhotos WHERE ad.city = @City
-END;
-GO
-
-
---wyszukanie po konkretnym miescie i kodzie pocztowym
-CREATE PROCEDURE flatpol.searchHouseCity @City nvarchar(40), @PostalCode nvarchar(10)
-AS
-BEGIN
-
-SELECT * FROM flatpol.selectAdsHousesPhotos WHERE ad.city = @City AND ad.postalCode = @PostalCode
-END;
-GO
 
 --wstawianie danych do tabel
 CREATE PROCEDURE flatpol.insertIntoObject
+@typeId int NULL,
 @squareFotoage float,
 @description nvarchar,
 @rooms int,
@@ -165,25 +11,29 @@ CREATE PROCEDURE flatpol.insertIntoObject
 @basementSquareFootage float NULL,
 @balconySquareFootage float NULL,
 @allowAnimals boolean,
-@typeId int NULL,
 @floor int NULL,
-@photosId INT
 AS
 BEGIN
 
-IF @PhotosId IS NOT NULL AND NOT EXISTS (
-	SELECT 1 FROM Photos WHERE id = @photosId
-)
+IF @TypeId IS NOT NULL
 BEGIN
-PRINT 'Error: PhotosId does nott exist.';
-RETURN;
-END;
+    -- Sprawdzenie, czy TypeId istnieje w tabeli House
+    IF NOT EXISTS (
+        SELECT 1
+        FROM House
+        WHERE id = @TypeId
+    )
+    BEGIN
+        PRINT 'Error: TypeId does not exist.';
+        RETURN; -- Przerwij wykonanie procedury
+    END;
 
-IF @TypeId IS NOT NULL AND NOT EXISTS (
-SELECT 1 FROM House WHERE id = @typeId
-)
-BEGIN
-PRINT 'Error: TypeId does not exist.';
+    -- Sprawdzenie, czy floor jest NULL, gdy TypeId nie jest NULL
+    IF @Floor IS NOT NULL
+    BEGIN
+        PRINT 'Error: Floor must be NULL when TypeId is provided.';
+        RETURN; -- Przerwij wykonanie procedury
+    END;
 END;
 
 INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFoorage, balconySquareFootage, allowAnimals, floor, photosId, typeId)
@@ -191,7 +41,6 @@ INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquare
 
 END;
 GO
-
 
 --wstawianie do zdjec
 CREATE PROCEDURE flatpol.insertIntoPhotos
@@ -331,62 +180,3 @@ BEGIN
     WHERE id = price_id;
 
 END;
-
-
---wyszukanie po dowonlej wartości z objects, price czy house???
-
-
-
-
-
-
-
-
---testowe wartosci:-------------------------
-INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-VALUES (1500, 600, 300, 2500, 'lump', 'Private');
-
-INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-VALUES (1200, 500, 200, 1500, 'monthly', 'Agency');
-
-INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-VALUES (2000, 800, 350, 2500, 'yearly', 'Private');
-
-
-
-INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, photoId, typeId)
-VALUES (120.5, 'Spacious apartment with a balcony', 4, 2, 10.0, 5.0, TRUE, 3, 1, 2);
-
-
-INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, photoId, typeId)
-VALUES (75.0, 'Cozy flat in the city center', 2, 1, NULL, 3.5, FALSE, 2, 2, 1);
-
-
-INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, photoId, typeId)
-VALUES (100.0, 'Modern house with garden', 3, 1, 20.0, NULL, TRUE, 1, 3, 3);
-
-
-
-INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, pilotArea)
-VALUES (2, 15.0, 25.0, 12.0);
-
-
-INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, pilotArea)
-VALUES (3, 20.0, 30.0, 15.0);
-
-
-INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, pilotArea)
-VALUES (1, 10.0, 20.0, 8.0);
-
-
-
-INSERT INTO Photos (photoURL)
-VALUES ('http://example.com/photo1.jpg');
-
-
-INSERT INTO Photos (photoURL)
-VALUES ('http://example.com/photo2.jpg');
-
-
-INSERT INTO Photos (photoURL)
-VALUES ('http://example.com/photo3.jpg');

@@ -1,4 +1,0 @@
-CREATE TABLE photos (
-id SERIAL PRIMARY KEY,
-photoURL VARCHAR(1000)
-);
