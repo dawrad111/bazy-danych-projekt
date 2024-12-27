@@ -1,5 +1,5 @@
 CREATE TABLE house (
-id INT PRIMARY KEY DEFAULT nextval('house_id_seq'),
+id SERIAL PRIMARY KEY,
 stories INT,
 atticSquareFootage FLOAT NULL,
 terraceSquareFootage FLOAT NULL,

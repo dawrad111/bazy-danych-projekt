@@ -3,7 +3,7 @@ CREATE VIEW selectAdsHousesPhotos AS
 SELECT a.id, a.title, o.id, o.description, p.id, p.photoURL, h.id, pr.price
 FROM Advertisement a
 JOIN Object o ON a.objectId = o.id
-JOIN Photos p ON o.photosID = p.id
+JOIN Photos p ON  o.id = p.objectId
 JOIN House h ON o.typeId IS NOT NULL AND o.typeId = h.id
 JOIN Price pr ON a.priceId = pr.id;
 
@@ -12,7 +12,7 @@ CREATE VIEW selectAdsHousesPhotos AS
 SELECT a.id, a.title, o.id, o.description, p.id, p.photoURL, pr.price
 FROM Advertisement a
 JOIN Object o ON a.objectId = o.id
-JOIN Photos p ON o.photosID = p.id
+JOIN Photos p ON o.id = p.objectId
 JOIN House h ON o.typeId IS NULL
 JOIN Price pr ON a.priceId = pr.id;
 
@@ -56,6 +56,7 @@ SELECT * FROM selectAdsHousesPhotos WHERE ad.city = @City AND ad.postalCode = @P
 END;
 GO
 
+-- do poprawy procedura bo zmiana zdjec
 --wstawianie danych do tabel
 CREATE PROCEDURE insertIntoObject
 @squareFotoage float,
@@ -137,50 +138,29 @@ GO
 
 
 --testowe wartosci:
+-- niepoprawne dane co do kolumn
 INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-VALUES (1500, 600, 300, 2500, 'lump', 'Private');
-
-INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-VALUES (1200, 500, 200, 1500, 'monthly', 'Agency');
-
-INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-VALUES (2000, 800, 350, 2500, 'yearly', 'Private');
+VALUES (1500, 600, 300, 2500, 'lump', 'Private'),
+(1200, 500, 200, 1500, 'monthly', 'Agency'),
+(2000, 800, 350, 2500, 'yearly', 'Private');
 
 
 
-INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, photoId, typeId)
-VALUES (120.5, 'Spacious apartment with a balcony', 4, 2, 10.0, 5.0, TRUE, 3, 1, 2);
-
-
-INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, photoId, typeId)
-VALUES (75.0, 'Cozy flat in the city center', 2, 1, NULL, 3.5, FALSE, 2, 2, 1);
-
-
-INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, photoId, typeId)
-VALUES (100.0, 'Modern house with garden', 3, 1, 20.0, NULL, TRUE, 1, 3, 3);
+INSERT INTO Object (squareFootage, description, rooms, bathrooms, basementSquareFootage, balconySquareFootage, allowAnimals, floor, typeId)
+VALUES (120.5, 'Spacious apartment with a balcony', 4, 2, 10.0, 5.0, TRUE, 3, 2),
+(75.0, 'Cozy flat in the city center', 2, 1, NULL, 3.5, FALSE, 2, 1),
+(100.0, 'Modern house with garden', 3, 1, 20.0, NULL, TRUE, 1, 3);
 
 
 
-INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, pilotArea)
-VALUES (2, 15.0, 25.0, 12.0);
-
-
-INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, pilotArea)
-VALUES (3, 20.0, 30.0, 15.0);
-
-
-INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, pilotArea)
-VALUES (1, 10.0, 20.0, 8.0);
+INSERT INTO House (stories, atticSquareFootage, terraceSquareFootage, plotArea)
+VALUES (2, 15.0, 25.0, 12.0),
+(3, 20.0, 30.0, 15.0),
+(1, 10.0, 20.0, 8.0);
 
 
 
-INSERT INTO Photos (photoURL)
-VALUES ('http://example.com/photo1.jpg');
-
-
-INSERT INTO Photos (photoURL)
-VALUES ('http://example.com/photo2.jpg');
-
-
-INSERT INTO Photos (photoURL)
-VALUES ('http://example.com/photo3.jpg');
+INSERT INTO Photos (photoURL, objectId)
+VALUES ('http://example.com/photo1.jpg', 4),
+('http://example.com/photo2.jpg', 5),
+('http://example.com/photo3.jpg', 6);

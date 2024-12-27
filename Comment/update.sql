@@ -1,11 +1,6 @@
 INSERT INTO comment (userId, advertisementId, content, status)
-VALUES (1, 1, 'Ogloszenie zgodne z opisem', 'active';
-
-INSERT INTO complaint (userId, content, status)
-VALUES (1, 'Proszę o sprawdzenie statusu płatnosci o numerze 1', 'active');
-
-INSERT INTO like (userId, commentId)
-VALUES (1, 1);
+VALUES (1, 1, 'Ogloszenie zgodne z opisem', 'active'),
+(1, 'Proszę o sprawdzenie statusu płatnosci o numerze 1', 'active');
 
 SELECT COUNT(*)
 FROM like

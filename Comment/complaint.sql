@@ -1,6 +1,6 @@
 CREATE TABLE complaint (
     id SERIAL PRIMARY KEY,
-	userId INTEGER NOT NULL users(id),
+	userId INTEGER NOT NULL REFERENCES users(id),
     content TEXT NOT NULL,
     postDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     solutionDate TIMESTAMP DEFAULT NULL,

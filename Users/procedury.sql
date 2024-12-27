@@ -1,23 +1,23 @@
 INSERT INTO Users (
-    name, surname, passwordHash, email, phoneNumber, lastLoginDate, 
+    name, surname, passwordHash, emailId, phoneNumberId, lastLoginDate, 
     registrationDate, userType, status, isVerified
 ) VALUES (
-    'Alice', 'Smith', 'example_hash', 'alice.smith@example.com', 
-    '+48123456789', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 
+    'Alice', 'Smith', 'example_hash', 4, 1, 
+     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 
     'user', 'active', FALSE
 );
 
-INSERT INTO "Phone number" (
-    userId, phoneNumber, code, codeExpiredDate, isVerified, VerifiedDate
+INSERT INTO phoneNumber (
+    phoneNumber, code, linkExpiredDate, isVerified, VerifiedDate
 ) VALUES (
-    1, '+48123456789', '123456', 
+    '+48123456789', '123456', 
     CURRENT_TIMESTAMP + INTERVAL '10 minutes', FALSE, NULL
 );
 
 INSERT INTO Email (
-    userId, email, link, linkExpiredDate, isVerified, verifiedDate
+    email, link, linkExpiredDate, isVerified, verifiedDate
 ) VALUES (
-    1, 'alice.smith@example.com', 'http://example.com/verify_email', 
+    'alice.smith@example.com', 'http://example.com/verify_email', 
     CURRENT_TIMESTAMP + INTERVAL '1 day', FALSE, NULL
 );
 
@@ -28,6 +28,7 @@ INSERT INTO Logs (
 );
 
 
+-- do poprawy zamienic na procedures/views/transactions
 --użytkownicy zablokowani
 
 SELECT 

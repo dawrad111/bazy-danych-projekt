@@ -1,5 +1,5 @@
-CREATE TABLE like (
+CREATE TABLE bumpCount (
     id SERIAL PRIMARY KEY,
-	userId INTEGER NOT NULL users(id),
-    commentId INTEGER NOT NULL comment(id),
+	userId INTEGER NOT NULL REFERENCES Users(id),
+    commentId INTEGER NOT NULL REFERENCES comment(id)
 );

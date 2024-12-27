@@ -1,4 +1,4 @@
-CREATE TABLE flatpol.address
+CREATE TABLE address
 (
     id            SERIAL PRIMARY KEY,
     country       VARCHAR(100) not null,
@@ -8,10 +8,10 @@ CREATE TABLE flatpol.address
     street        VARCHAR(100) null,
     buildingNum   VARCHAR(10)  not null,
     flatNum       INT null,
-    coordinatesId INT references flatpol.coordinates (id) null,
+    coordinatesId INT references coordinates (id) null,
 );
 
-INSERT INTO flatpol.address (country, region, postalCode, city, street, buildingNum, flatNum)
+INSERT INTO address (country, region, postalCode, city, street, buildingNum, flatNum)
 VALUES ('Poland', 'Dolny Śląsk', '50-421', 'Wrocław', 'Na Grobli', '15', 12),
        ('Poland', 'Dolny Śląsk', '50-366', 'Wrocław', 'Grunwaldzka', '59', 3),
        ('Poland', 'Dolny Śląsk', '51-627', 'Wrocław', 'Wróblewskiego', '27', 5),
@@ -19,7 +19,7 @@ VALUES ('Poland', 'Dolny Śląsk', '50-421', 'Wrocław', 'Na Grobli', '15', 12),
        ('Poland', 'Dolny Śląsk', '50-334', 'Wrocław', 'Rozbrat', '7', 10),
        ('Poland', 'Dolny Śląsk', '51-640', 'Wrocław', 'Braci Gierymskich', '45A', 10) RETURNING *;
 
-CREATE VIEW flatpol.addressesView AS
+CREATE VIEW addressesView AS
 SELECT a.country,
        a.region,
        a.postalCode,
@@ -50,8 +50,7 @@ CREATE PROCEDURE flatpol.insertAddressWithCoordinates(
 DECLARE
 @CoordinatesId INT;
 BEGIN
-BEGIN
-TRANSACTION;
+BEGIN TRANSACTION;
 
 INSERT INTO flatpol.coordinates (latitude, longitude)
 VALUES (@Latitude, @Longitude) RETURNING coordinates.id

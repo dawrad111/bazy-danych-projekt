@@ -1,5 +1,5 @@
 CREATE TABLE price (
-id PRIMARY KEY,
+id INT PRIMARY KEY,
 price INT,
 rent FLOAT,
 heating FLOAT NULL,
