@@ -23,45 +23,44 @@ VALUES (2, 1, 'posted', 'Mieszkanie na sprzedaż', 1, 1, 1),
        (2, 5, 'posted', 'Pokój na wynajem', 5, 5, 5) RETURNING *;
 
 
-CREATE VIEW flatpol.advertisementsView AS
-SELECT ad.city, ad.street, a.title, pr.price, pr.currency,
-FROM flatpol.advertisement a
-         JOIN flatpol.address ad ON a.addressId = ad.id
-         JOIN flatpol.price pr ON a.priceId = pr.id;
+-- CREATE VIEW advertisementsView AS
+-- SELECT ad.city, ad.street, a.title, pr.price, pr.currency
+-- FROM advertisement a
+--          JOIN address ad ON a.addressId = ad.id
+--          JOIN price pr ON a.priceId = pr.id;
 
-CREATE VIEW flatpol.advertisementsPriceSortedView AS
-SELECT ad.city, ad.street, a.title, pr.price, pr.currency,
-FROM flatpol.advertisement a
-         JOIN flatpol.address ad ON a.addressId = ad.id
-         JOIN flatpol.price pr ON a.priceId = pr.id
-ORDER BY pr.price DESC;
+-- CREATE VIEW advertisementsPriceSortedView AS
+-- SELECT ad.city, ad.street, a.title, pr.price, pr.currency
+-- FROM advertisement a
+--          JOIN address ad ON a.addressId = ad.id
+--          JOIN price pr ON a.priceId = pr.id
+-- ORDER BY pr.price DESC;
 
 -- Shows all advertisements in a given area
-CREATE PROCEDURE flatpol.advertisementInArea(
-    @City VARCHAR(100) = NULL,
-    @Region VARCHAR(100) = NULL,
-    @Country VARCHAR(100) = NULL)
-    AS
+CREATE PROCEDURE advertisementInArea
+    @City VARCHAR(100) DEFAULT NULL,
+    @Region VARCHAR(100) DEFAULT NULL,
+    @Country VARCHAR(100) DEFAULT NULL
+AS
 BEGIN
-SELECT ad.city, ad.street, a.title, pr.price, pr.currency,
-FROM flatpol.advertisement a
-         JOIN flatpol.address ad ON a.addressId = ad.id
-         JOIN flatpol.price pr ON a.priceId = pr.id
-WHERE (@City IS NULL OR ad.City = @City)
-  AND (@Region IS NULL OR ad.Region = @Region)
-  AND (@Country IS NULL OR ad.Country = @Country);
+    SELECT ad.city, ad.street, a.title, pr.price, pr.currency
+    FROM advertisement a
+         JOIN address ad ON a.addressId = ad.id
+         JOIN price pr ON a.priceId = pr.id
+    WHERE (@City IS NULL OR ad.City = @City)
+      AND (@Region IS NULL OR ad.Region = @Region)
+      AND (@Country IS NULL OR ad.Country = @Country);
 END;
 
-CREATE VIEW flatpol.allUserAdvertisementsView AS
-SELECT u.firstName,
-       u.lastName,
-       ad.title,
-       ad.status,
-       pr.price,
-       pr.currency,
-       ad.postTime,
-       ad.endDate
-FROM flatpol.advertisement ad
-         JOIN flatpol.user u ON ad.userId = u.id
-         JOIN flatpol.price pr ON ad.priceId = pr.id;
-
+-- CREATE VIEW allUserAdvertisementsView AS
+-- SELECT u.name,
+--        u.surName,
+--        ad.title,
+--        ad.status,
+--        pr.price,
+--        pr.currency,
+--        ad.postTime,
+--        ad.endDate
+-- FROM advertisement ad
+--          JOIN users u ON ad.userId = u.id
+--          JOIN price pr ON ad.priceId = pr.id;

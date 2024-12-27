@@ -1,7 +1,7 @@
 
 -- Inset address with coordinates
 
-CREATE PROCEDURE flatpol.insertAddressWithCoordinates(
+CREATE PROCEDURE insertAddressWithCoordinates(
     @Country VARCHAR(100),
     @Region VARCHAR(100),
     @PostalCode VARCHAR(6),
@@ -19,11 +19,11 @@ BEGIN
 BEGIN
 TRANSACTION;
 
-INSERT INTO flatpol.coordinates (latitude, longitude)
+INSERT INTO coordinates (latitude, longitude)
 VALUES (@Latitude, @Longitude) RETURNING coordinates.id
 INTO @CoordinatesId
 
-INSERT INTO flatpol.address (country, region, postalCode, city, street, buildingNum, flatNum, coordinatesId)
+INSERT INTO address (country, region, postalCode, city, street, buildingNum, flatNum, coordinatesId)
 VALUES (@Country, @Region, @PostalCode, @City, @Street, @BuildingNum, @FlatNum, @CoordinatesId);
 
 COMMIT;
@@ -33,16 +33,16 @@ END;
 
 
 -- Shows all advertisements in a given area
-CREATE PROCEDURE flatpol.advertisementInArea(
+CREATE PROCEDURE advertisementInArea(
     @City VARCHAR(100) = NULL,
     @Region VARCHAR(100) = NULL,
     @Country VARCHAR(100) = NULL)
     AS
 BEGIN
 SELECT ad.city, ad.street, a.title, pr.price, pr.currency,
-FROM flatpol.advertisement a
-         JOIN flatpol.address ad ON a.addressId = ad.id
-         JOIN flatpol.price pr ON a.priceId = pr.id
+FROM advertisement a
+         JOIN address ad ON a.addressId = ad.id
+         JOIN price pr ON a.priceId = pr.id
 WHERE (@City IS NULL OR ad.City = @City)
   AND (@Region IS NULL OR ad.Region = @Region)
   AND (@Country IS NULL OR ad.Country = @Country);
@@ -54,7 +54,7 @@ END;
 
 
 -- Shows all payments for a given user
-CREATE PROCEDURE flatpol.userPayments(
+CREATE PROCEDURE userPayments(
     @UserId INT
 )
     AS
@@ -64,16 +64,16 @@ SELECT u.firstName,
        p.price,
        p.creationDate,
        p.status
-FROM flatpol.payment p
-         JOIN flatpol.advertisement a ON p.advertisementId = a.id
-         JOIN flatpol.user u ON a.userId = u.id
+FROM payment p
+         JOIN advertisement a ON p.advertisementId = a.id
+         JOIN user u ON a.userId = u.id
 WHERE u.id = @UserId;
 END;
 
 
 
 --Usuniecie ogloszenia (UWAGA. TYLKO PODCZAS TWORZENIA W MOMENCIE GDY SIE ROZMYSLI. OGLOSZENIA, KTORE ZOSTANA ZAAKCEPTOWANE PRZEZ UZYTKOWNIKA MAJA BYĆ UKRYWANE -> procedura hideAdvert)
-CREATE PROCEDURE flatpol.deleteAdvert
+CREATE PROCEDURE deleteAdvert
     @AdvertisementId INT
 AS
 BEGIN
@@ -127,7 +127,7 @@ GO
 
 
 --Procedura chowania ogloszenia (keidy np. usuwane jest konto uzytkownika)
-CREATE PROCEDURE flatpol.hideAdvert
+CREATE PROCEDURE hideAdvert
     @AdvertisementId INT
 AS
 BEGIN
@@ -154,7 +154,7 @@ GO
 
 
 --Procedura zawieszenia ogloszenia (keidy np. ogloszenie jest podejrzane, zgloszone)
-CREATE PROCEDURE flatpol.suspendAdvert
+CREATE PROCEDURE suspendAdvert
     @AdvertisementId INT
 AS
 BEGIN
@@ -180,7 +180,7 @@ GO
 
 
 --Procedura postowania ogloszenia (keidy np. ogloszenie bylo zgloszone, już nie jest lub keidy zatiwerdza sie je po platnosci)
-CREATE PROCEDURE flatpol.acceptAdvert
+CREATE PROCEDURE acceptAdvert
     @AdvertisementId INT
 AS
 BEGIN
@@ -208,26 +208,26 @@ GO
 
 
 -- Insert a payment for a given advertisement
-CREATE PROCEDURE flatpol.insertPayment(
+CREATE PROCEDURE insertPayment(
     @Price NUMERIC(4,2),
     @AdvertisementId INT
 )
     AS
 BEGIN
-INSERT INTO flatpol.payment (price, advertisementId)
+INSERT INTO payment (price, advertisementId)
 VALUES (@Price, @AdvertisementId)
 END;
 
 
 -- Update payment values if not null
-CREATE PROCEDURE flatpol.updatePayment(
+CREATE PROCEDURE updatePayment(
     @Id INT,
     @Price NUMERIC(4,2) = NULL,
     @Status VARCHAR(12) = NULL
 )
     AS
 BEGIN
-UPDATE flatpol.payment
+UPDATE payment
 SET price  = COALESCE(@Price, price),
     status = COALESCE(@Status, status)
 WHERE id = @Id;
@@ -237,7 +237,7 @@ END;
 
 --EDYCJA TABELI
 
-REATE PROCEDURE flatpol.editAdvertisement
+REATE PROCEDURE editAdvertisement
     @AdvertisementId INT,
     @NewStatus VARCHAR(20) NULL,
     @NewTitle NVARCHAR(255) NULL
@@ -264,7 +264,7 @@ GO
 
 
 
-CREATE PROCEDURE flatpol.editPayment
+CREATE PROCEDURE editPayment
     @PaymentId INT,
     @NewPrice NUMERIC(10, 2) NULL,
     @NewPaymentStatus VARCHAR(12) NULL
@@ -288,7 +288,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE flatpol.editCoordinates
+CREATE PROCEDURE editCoordinates
     @CoordinatesId INT,
     @NewLatitude DOUBLE PRECISION NULL,
     @NewLongitude DOUBLE PRECISION NULL
@@ -313,7 +313,7 @@ END;
 GO
 
 
-CREATE PROCEDURE flatpol.editAddress
+CREATE PROCEDURE editAddress
     @AddressId INT,
     @NewCountry NVARCHAR(100) NULL,
     @NewRegion NVARCHAR(100) NULL,
