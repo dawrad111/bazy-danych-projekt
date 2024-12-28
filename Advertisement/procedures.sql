@@ -1,348 +1,381 @@
+-- Insert address with coordinates
 
--- Inset address with coordinates
-
-CREATE PROCEDURE insertAddressWithCoordinates(
-    @Country VARCHAR(100),
-    @Region VARCHAR(100),
-    @PostalCode VARCHAR(6),
-    @City VARCHAR(100),
-    @Street VARCHAR(100),
-    @BuildingNum VARCHAR(10),
-    @FlatNum INT,
-    @Latitude DOUBLE PRECISION,
-    @Longitude DOUBLE PRECISION
+CREATE OR REPLACE FUNCTION sp_insertAddressWithCoordinates(
+    p_Country VARCHAR(100),
+    p_Region VARCHAR(100),
+    p_PostalCode VARCHAR(6),
+    p_City VARCHAR(100),
+    p_Street VARCHAR(100),
+    p_BuildingNum VARCHAR(10),
+    p_FlatNum INT,
+    p_Latitude DOUBLE PRECISION,
+    p_Longitude DOUBLE PRECISION
 )
-    AS
+RETURNS VOID AS $$
 DECLARE
-@CoordinatesId INT;
+    v_CoordinatesId INT;
 BEGIN
-BEGIN
-TRANSACTION;
+    -- Insert into coordinates table and get the id
+    INSERT INTO coordinates (latitude, longitude)
+    VALUES (p_Latitude, p_Longitude)
+    RETURNING id INTO v_CoordinatesId;
 
-INSERT INTO coordinates (latitude, longitude)
-VALUES (@Latitude, @Longitude) RETURNING coordinates.id
-INTO @CoordinatesId
+    -- Insert into address table with the coordinates id
+    INSERT INTO address (country, region, postalCode, city, street, buildingNum, flatNum, coordinatesId)
+    VALUES (p_Country, p_Region, p_PostalCode, p_City, p_Street, p_BuildingNum, p_FlatNum, v_CoordinatesId);
 
-INSERT INTO address (country, region, postalCode, city, street, buildingNum, flatNum, coordinatesId)
-VALUES (@Country, @Region, @PostalCode, @City, @Street, @BuildingNum, @FlatNum, @CoordinatesId);
-
-COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Rollback transaction in case of error
+        RAISE;
 END;
+$$ LANGUAGE plpgsql;
 
 
-
-
--- Shows all advertisements in a given area
-CREATE PROCEDURE advertisementInArea(
-    @City VARCHAR(100) = NULL,
-    @Region VARCHAR(100) = NULL,
-    @Country VARCHAR(100) = NULL)
-    AS
-BEGIN
-SELECT ad.city, ad.street, a.title, pr.price, pr.currency,
-FROM advertisement a
-         JOIN address ad ON a.addressId = ad.id
-         JOIN price pr ON a.priceId = pr.id
-WHERE (@City IS NULL OR ad.City = @City)
-  AND (@Region IS NULL OR ad.Region = @Region)
-  AND (@Country IS NULL OR ad.Country = @Country);
-END;
-
-
-
-
-
-
--- Shows all payments for a given user
-CREATE PROCEDURE userPayments(
-    @UserId INT
+-- nie dziala
+-- Function to show all advertisements in a given area
+CREATE OR REPLACE FUNCTION sp_advertisementInArea(
+    p_city VARCHAR(100) DEFAULT NULL,
+    p_region VARCHAR(100) DEFAULT NULL,
+    p_country VARCHAR(100) DEFAULT NULL
 )
-    AS
+RETURNS TABLE(city VARCHAR, street VARCHAR, title VARCHAR, price NUMERIC) AS $$
 BEGIN
-SELECT u.firstName,
-       u.lastName,
-       p.price,
-       p.creationDate,
-       p.status
-FROM payment p
-         JOIN advertisement a ON p.advertisementId = a.id
-         JOIN user u ON a.userId = u.id
-WHERE u.id = @UserId;
+    RETURN QUERY
+    SELECT ad.city, ad.street, a.title, pr.price
+    FROM advertisement a
+         JOIN address ad ON a.addressid = ad.id
+         JOIN price pr ON a.priceid = pr.id
+    WHERE (p_city IS NULL OR ad.city = p_city)
+      AND (p_region IS NULL OR ad.region = p_region)
+      AND (p_country IS NULL OR ad.country = p_country);
 END;
+$$ LANGUAGE plpgsql;
+-- do pop
+
+
+
+-- doesn't work
+-- Shows all payments for a given user
+CREATE OR REPLACE FUNCTION sp_user_payments(user_id INT)
+RETURNS TABLE (
+    first_name VARCHAR,
+    last_name VARCHAR,
+    price NUMERIC,
+    creation_date TIMESTAMP,
+    status VARCHAR
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.firstName,
+           u.lastName,
+           p.price,
+           p.creationDate,
+           p.status
+    FROM Payment p
+    JOIN Advertisement a ON p.advertisementId = a.id
+    JOIN "User" u ON a.userId = u.id
+    WHERE u.id = user_id;
+END;
+$$ LANGUAGE plpgsql;
 
 
 
 --Usuniecie ogloszenia (UWAGA. TYLKO PODCZAS TWORZENIA W MOMENCIE GDY SIE ROZMYSLI. OGLOSZENIA, KTORE ZOSTANA ZAAKCEPTOWANE PRZEZ UZYTKOWNIKA MAJA BYĆ UKRYWANE -> procedura hideAdvert)
-CREATE PROCEDURE deleteAdvert
-    @AdvertisementId INT
-AS
+CREATE OR REPLACE FUNCTION sp_delete_advertisement(advertisement_id INT)
+RETURNS VOID AS $$
+DECLARE
+    object_id INT;
+    price_id INT;
 BEGIN
-    -- Sprawdzenie, czy rekord Advertisement istnieje
+    -- Check if the Advertisement record exists
     IF NOT EXISTS (
         SELECT 1
         FROM Advertisement
-        WHERE id = @AdvertisementId
-    )
-    BEGIN
-        PRINT 'Error: AdvertisementId does not exist.';
-        RETURN; -- Przerwij wykonanie procedury
-    END;
+        WHERE id = advertisement_id
+    ) THEN
+        RAISE NOTICE 'Error: AdvertisementId does not exist.';
+        RETURN; -- Exit the function
+    END IF;
 
-    -- Znalezienie powiązanych rekordów
-    DECLARE @ObjectId INT;
-    DECLARE @PriceId INT;
-
-    SELECT @ObjectId = objectId, @PriceId = priceId
+    -- Find related records
+    SELECT objectId, priceId
+    INTO object_id, price_id
     FROM Advertisement
-    WHERE id = @AdvertisementId;
+    WHERE id = advertisement_id;
 
-    -- Usuwanie płatności powiązanych z Advertisement
+    -- Delete payments related to Advertisement
     DELETE FROM Payment
-    WHERE advertisementId = @AdvertisementId;
+    WHERE advertisementId = advertisement_id;
 
-    -- Usuwanie zdjęć powiązanych z Object
+    -- Delete photos related to Object
     DELETE FROM Photos
-    WHERE objectId = @ObjectId;
+    WHERE objectId = object_id;
 
-    -- Usuwanie domu, jeśli istnieje powiązanie z Object
+    -- Delete house if there is a relation with Object
     DELETE FROM House
-    WHERE id = @ObjectId;
+    WHERE id = object_id;
 
-    -- Usuwanie ceny powiązanej z Advertisement
+    -- Delete price related to Advertisement
     DELETE FROM Price
-    WHERE id = @PriceId;
+    WHERE id = price_id;
 
-    -- Usunięcie obiektu
+    -- Delete the object
     DELETE FROM Object
-    WHERE id = @ObjectId;
+    WHERE id = object_id;
 
-    -- Na końcu usunięcie ogłoszenia
+    -- Finally, delete the advertisement
     DELETE FROM Advertisement
-    WHERE id = @AdvertisementId;
+    WHERE id = advertisement_id;
 
-    PRINT 'Advertisement and related records successfully deleted.';
+    RAISE NOTICE 'Advertisement and related records successfully deleted.';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
 
 
 --Procedura chowania ogloszenia (keidy np. usuwane jest konto uzytkownika)
-CREATE PROCEDURE hideAdvert
-    @AdvertisementId INT
-AS
+CREATE OR REPLACE FUNCTION sp_hide_advertisement(advertisement_id INT)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy AdvertisementId istnieje
+    -- Check if the Advertisement record exists
     IF NOT EXISTS (
         SELECT 1
         FROM Advertisement
-        WHERE id = @AdvertisementId
-    )
-    BEGIN
-        PRINT 'Error: AdvertisementId does not exist.';
-        RETURN; -- Przerwij wykonanie procedury
-    END;
+        WHERE id = advertisement_id
+    ) THEN
+        RAISE NOTICE 'Error: AdvertisementId does not exist.';
+        RETURN; -- Exit the function
+    END IF;
 
-    -- Ukrycie ogłoszenia
+    -- Hide the advertisement
     UPDATE Advertisement
     SET status = 'Hidden'
-    WHERE id = @AdvertisementId;
+    WHERE id = advertisement_id;
 
-    PRINT 'Advertisement hidden successfully!';
+    RAISE NOTICE 'Advertisement hidden successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
 
 
 --Procedura zawieszenia ogloszenia (keidy np. ogloszenie jest podejrzane, zgloszone)
-CREATE PROCEDURE suspendAdvert
-    @AdvertisementId INT
-AS
+CREATE OR REPLACE FUNCTION sp_suspend_advertisement(advertisement_id INT)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy AdvertisementId istnieje
+    -- Check if the Advertisement record exists
     IF NOT EXISTS (
         SELECT 1
         FROM Advertisement
-        WHERE id = @AdvertisementId
-    )
-    BEGIN
-        PRINT 'Error: AdvertisementId does not exist.';
-        RETURN; -- Przerwij wykonanie procedury
-    END;
+        WHERE id = advertisement_id
+    ) THEN
+        RAISE NOTICE 'Error: AdvertisementId does not exist.';
+        RETURN; -- Exit the function
+    END IF;
 
-    -- Ukrycie ogłoszenia
+    -- Suspend the advertisement
     UPDATE Advertisement
     SET status = 'Suspended'
-    WHERE id = @AdvertisementId;
+    WHERE id = advertisement_id;
 
-    PRINT 'Advertisement suspended successfully!';
+    RAISE NOTICE 'Advertisement suspended successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
 
 --Procedura postowania ogloszenia (keidy np. ogloszenie bylo zgloszone, już nie jest lub keidy zatiwerdza sie je po platnosci)
-CREATE PROCEDURE acceptAdvert
-    @AdvertisementId INT
-AS
+CREATE OR REPLACE FUNCTION sp_accept_advertisement(advertisement_id INT)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy AdvertisementId istnieje
+    -- Check if the Advertisement record exists
     IF NOT EXISTS (
         SELECT 1
         FROM Advertisement
-        WHERE id = @AdvertisementId
-    )
-    BEGIN
-        PRINT 'Error: AdvertisementId does not exist.';
-        RETURN; -- Przerwij wykonanie procedury
-    END;
+        WHERE id = advertisement_id
+    ) THEN
+        RAISE NOTICE 'Error: AdvertisementId does not exist.';
+        RETURN; -- Exit the function
+    END IF;
 
-    -- Ukrycie ogłoszenia
+    -- Update Advertisement status to 'Posted'
     UPDATE Advertisement
     SET status = 'Posted'
-    WHERE id = @AdvertisementId;
+    WHERE id = advertisement_id;
 
-    PRINT 'Advertisement suspended successfully!';
+    RAISE NOTICE 'Advertisement posted successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
 
 
 
 -- Insert a payment for a given advertisement
-CREATE PROCEDURE insertPayment(
-    @Price NUMERIC(4,2),
-    @AdvertisementId INT
+CREATE OR REPLACE FUNCTION sp_insert_payment(
+    price NUMERIC(4, 2),
+    advertisement_id INT
 )
-    AS
+RETURNS VOID AS $$
 BEGIN
-INSERT INTO payment (price, advertisementId)
-VALUES (@Price, @AdvertisementId)
+    INSERT INTO Payment (price, advertisementId)
+    VALUES (price, advertisement_id);
+
+    RAISE NOTICE 'Payment inserted successfully!';
 END;
+$$ LANGUAGE plpgsql;
 
 
 -- Update payment values if not null
-CREATE PROCEDURE updatePayment(
-    @Id INT,
-    @Price NUMERIC(4,2) = NULL,
-    @Status VARCHAR(12) = NULL
+CREATE OR REPLACE FUNCTION sp_update_payment(
+    id INT,
+    price NUMERIC(4, 2) DEFAULT NULL,
+    status VARCHAR(12) DEFAULT NULL
 )
-    AS
+RETURNS VOID AS $$
 BEGIN
-UPDATE payment
-SET price  = COALESCE(@Price, price),
-    status = COALESCE(@Status, status)
-WHERE id = @Id;
+    -- Update Payment
+    UPDATE Payment
+    SET
+        price = COALESCE(price, price),
+        status = COALESCE(status, status)
+    WHERE id = id;
+
+    RAISE NOTICE 'Payment updated successfully!';
 END;
+$$ LANGUAGE plpgsql;
 
 
 
 --EDYCJA TABELI
 
-REATE PROCEDURE editAdvertisement
-    @AdvertisementId INT,
-    @NewStatus VARCHAR(20) NULL,
-    @NewTitle NVARCHAR(255) NULL
-AS
+CREATE OR REPLACE FUNCTION sp_edit_advertisement(
+    advertisement_id INT,
+    new_status VARCHAR(20) DEFAULT NULL,
+    new_title VARCHAR(255) DEFAULT NULL
+)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy AdvertisementId istnieje
-    IF NOT EXISTS (SELECT 1 FROM Advertisement WHERE id = @AdvertisementId)
-    BEGIN
-        PRINT 'Error: AdvertisementId does not exist.';
+    -- Check if the Advertisement record exists
+    IF NOT EXISTS (SELECT 1 FROM Advertisement WHERE id = advertisement_id) THEN
+        RAISE NOTICE 'Error: AdvertisementId does not exist.';
         RETURN;
-    END;
+    END IF;
 
-    -- Aktualizacja Advertisement
+    -- Update Advertisement
     UPDATE Advertisement
     SET
-        status = COALESCE(@NewStatus, status),
-        title = COALESCE(@NewTitle, title)
-    WHERE id = @AdvertisementId;
+        status = COALESCE(new_status, status),
+        title = COALESCE(new_title, title)
+    WHERE id = advertisement_id;
 
-    PRINT 'Advertisement updated successfully!';
+    RAISE NOTICE 'Advertisement updated successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
 
 
 
-CREATE PROCEDURE editPayment
-    @PaymentId INT,
-    @NewPrice NUMERIC(10, 2) NULL,
-    @NewPaymentStatus VARCHAR(12) NULL
-AS
+CREATE OR REPLACE FUNCTION sp_edit_payment(
+    payment_id INT,
+    new_price NUMERIC(10, 2) DEFAULT NULL,
+    new_payment_status VARCHAR(12) DEFAULT NULL
+)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy PaymentId istnieje
-    IF NOT EXISTS (SELECT 1 FROM Payment WHERE id = @PaymentId)
-    BEGIN
-        PRINT 'Error: PaymentId does not exist.';
+    -- Check if the Payment record exists
+    IF NOT EXISTS (SELECT 1 FROM Payment WHERE id = payment_id) THEN
+        RAISE NOTICE 'Error: PaymentId does not exist.';
         RETURN;
-    END;
+    END IF;
 
-    -- Aktualizacja Payment
+    -- Update Payment
     UPDATE Payment
     SET
-        price = COALESCE(@NewPrice, price),
-        status = COALESCE(@NewPaymentStatus, status)
-    WHERE id = @PaymentId;
+        price = COALESCE(new_price, price),
+        status = COALESCE(new_payment_status, status)
+    WHERE id = payment_id;
 
-    PRINT 'Payment updated successfully!';
+    RAISE NOTICE 'Payment updated successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
-CREATE PROCEDURE editCoordinates
-    @CoordinatesId INT,
-    @NewLatitude DOUBLE PRECISION NULL,
-    @NewLongitude DOUBLE PRECISION NULL
-AS
+
+CREATE OR REPLACE FUNCTION sp_edit_coordinates(
+    coordinates_id INT,
+    new_latitude DOUBLE PRECISION DEFAULT NULL,
+    new_longitude DOUBLE PRECISION DEFAULT NULL
+)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy CoordinatesId istnieje
-    IF NOT EXISTS (SELECT 1 FROM Coordinates WHERE id = @CoordinatesId)
-    BEGIN
-        PRINT 'Error: CoordinatesId does not exist.';
+    -- Check if the Coordinates record exists
+    IF NOT EXISTS (SELECT 1 FROM Coordinates WHERE id = coordinates_id) THEN
+        RAISE NOTICE 'Error: CoordinatesId does not exist.';
         RETURN;
-    END;
+    END IF;
 
-    -- Aktualizacja Coordinates
+    -- Update Coordinates
     UPDATE Coordinates
     SET
-        latitude = COALESCE(@NewLatitude, latitude),
-        longitude = COALESCE(@NewLongitude, longitude)
-    WHERE id = @CoordinatesId;
+        latitude = COALESCE(new_latitude, latitude),
+        longitude = COALESCE(new_longitude, longitude)
+    WHERE id = coordinates_id;
 
-    PRINT 'Coordinates updated successfully!';
+    RAISE NOTICE 'Coordinates updated successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
 
-
-CREATE PROCEDURE editAddress
-    @AddressId INT,
-    @NewCountry NVARCHAR(100) NULL,
-    @NewRegion NVARCHAR(100) NULL,
-    @NewPostalCode NVARCHAR(20) NULL,
-    @NewCity NVARCHAR(100) NULL,
-    @NewStreet NVARCHAR(100) NULL,
-    @NewBuildingNum NVARCHAR(20) NULL,
-    @NewFlatNum NVARCHAR(20) NULL
-AS
+CREATE OR REPLACE FUNCTION sp_edit_address(
+    address_id INT,
+    new_country VARCHAR(100) DEFAULT NULL,
+    new_region VARCHAR(100) DEFAULT NULL,
+    new_postal_code VARCHAR(20) DEFAULT NULL,
+    new_city VARCHAR(100) DEFAULT NULL,
+    new_street VARCHAR(100) DEFAULT NULL,
+    new_building_num VARCHAR(20) DEFAULT NULL,
+    new_flat_num VARCHAR(20) DEFAULT NULL
+)
+RETURNS VOID AS $$
 BEGIN
-    -- Sprawdzenie, czy AddressId istnieje
-    IF NOT EXISTS (SELECT 1 FROM Address WHERE id = @AddressId)
-    BEGIN
-        PRINT 'Error: AddressId does not exist.';
+    -- Check if the Address record exists
+    IF NOT EXISTS (SELECT 1 FROM Address WHERE id = address_id) THEN
+        RAISE NOTICE 'Error: AddressId does not exist.';
         RETURN;
-    END;
+    END IF;
 
-    -- Aktualizacja Address
+    -- Update Address
     UPDATE Address
     SET
-        country = COALESCE(@NewCountry, country),
-        region = COALESCE(@NewRegion, region),
-        postalCode = COALESCE(@NewPostalCode, postalCode),
-        city = COALESCE(@NewCity, city),
-        street = COALESCE(@NewStreet, street),
-        buildingNum = COALESCE(@NewBuildingNum, buildingNum),
-        flatNum = COALESCE(@NewFlatNum, flatNum)
-    WHERE id = @AddressId;
+        country = COALESCE(new_country, country),
+        region = COALESCE(new_region, region),
+        postalCode = COALESCE(new_postal_code, postalCode),
+        city = COALESCE(new_city, city),
+        street = COALESCE(new_street, street),
+        buildingNum = COALESCE(new_building_num, buildingNum),
+        flatNum = COALESCE(new_flat_num, flatNum)
+    WHERE id = address_id;
 
-    PRINT 'Address updated successfully!';
+    RAISE NOTICE 'Address updated successfully!';
 END;
-GO
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION sp_hideadvertisement(advertisement_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the Advertisement record exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Advertisement
+        WHERE id = advertisement_id
+    ) THEN
+        RAISE NOTICE 'Error: AdvertisementId does not exist.';
+        RETURN; -- Exit the function
+    END IF;
+
+    -- Hide the advertisement
+    UPDATE Advertisement
+    SET status = 'Hidden'
+    WHERE id = advertisement_id;
+
+    RAISE NOTICE 'Advertisement hidden successfully!';
+END;
+$$ LANGUAGE plpgsql;
