@@ -6,18 +6,11 @@ services:
   db:
     image: postgres
     restart: always
-    # set shared memory limit when using docker-compose
     shm_size: 128mb
-    # or set shared memory limit when deploy via swarm stack
-    #volumes:
-    #  - type: tmpfs
-    #    target: /dev/shm
-    #    tmpfs:
-    #      size: 134217728 # 128*2^20 bytes = 128Mb
     environment:
       POSTGRES_PASSWORD: example
     volumes:
-      - db-data:/data_backup
+      - new-db-data:/var/lib/postgresql/data
 
   adminer:
     image: adminer
@@ -25,9 +18,5 @@ services:
     ports:
       - 8080:8080
 volumes:
-  db-data:
+  new-db-data:  # Declare the new volume
     driver: local
-    driver_opts:
-      type: none
-      device: C:/Users/p9bar/Documents/sql/flatpol_backup
-      o: bind

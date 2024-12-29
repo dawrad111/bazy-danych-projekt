@@ -1,11 +1,14 @@
 ## Database Schemas Recreation Instructions
 
 
+- Create a container group with docker-compose
+- Create a database "Flatpol"
 ```
-docker exec -it <containter_name> bash
-service postgresql stop
-rm -rf /var/lib/postgresql/data/*
-cp -r /data_backup/* /var/lib/postgresql/data/
-chown -R postgres:postgres /var/lib/postgresql/data
-service postgresql start
+docker cp <path_to_backup_file> <container_name>:/tmp/backup.sql
+```
+```
+docker exec -it <container_name> bash
+```
+```
+psql -U postgres -d Flatpol -f /tmp/backup.sql
 ```
