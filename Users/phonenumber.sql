@@ -1,6 +1,5 @@
-CREATE TABLE PhoneNumber (
+CREATE TABLE phone_number (
     id SERIAL PRIMARY KEY, 
-    userId SERIAL REFERENCES Users(userId) NOT NULL, 
     phoneNumber TEXT NOT NULL, 
     code VARCHAR,
     linkExpiredDate TIMESTAMP,

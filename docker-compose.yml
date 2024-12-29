@@ -4,7 +4,7 @@ version: '3.9'
 services:
 
   db:
-    image: b4rtosh/flatpol
+    image: postgres
     restart: always
     # set shared memory limit when using docker-compose
     shm_size: 128mb
@@ -16,9 +16,18 @@ services:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     environment:
       POSTGRES_PASSWORD: example
+    volumes:
+      - db-data:/data_backup
 
   adminer:
     image: adminer
     restart: always
     ports:
       - 8080:8080
+volumes:
+  db-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: C:/Users/p9bar/Documents/sql/flatpol_backup
+      o: bind

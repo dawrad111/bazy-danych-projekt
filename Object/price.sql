@@ -1,11 +1,9 @@
 CREATE TABLE price (
-id INT PRIMARY KEY,
-price INT,
+id PRIMARY KEY,
+price FLOAT,
 rent FLOAT,
-heating FLOAT NULL,
-water FLOAT,
-electricity FLOAT,
-administrativeFees FLOAT,
+media FLOAT,
+deposit FLOAT,
 typeOFPayment VARCHAR,
 typeOfOwner VARCHAR
 );

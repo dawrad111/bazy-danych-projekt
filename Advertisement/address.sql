@@ -8,8 +8,8 @@ CREATE TABLE address
     street        VARCHAR(100) null,
     buildingNum   VARCHAR(10)  not null,
     flatNum       INT null,
-    coordinatesId INT references coordinates (id) null,
-);
+    coordinatesId INT references coordinates (id) null
+    );
 
 INSERT INTO address (country, region, postalCode, city, street, buildingNum, flatNum)
 VALUES ('Poland', 'Dolny Śląsk', '50-421', 'Wrocław', 'Na Grobli', '15', 12),

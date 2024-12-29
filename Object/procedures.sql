@@ -1,6 +1,7 @@
 
 -- do poprawy procedura bo zmiana zdjec
 --wstawianie danych do tabel
+begin transaction;
 CREATE OR REPLACE FUNCTION sp_insert_into_object(
     square_footage FLOAT,
     description TEXT,
@@ -180,3 +181,5 @@ BEGIN
     RAISE NOTICE 'Price updated successfully!';
 END;
 $$ LANGUAGE plpgsql;
+
+commit;

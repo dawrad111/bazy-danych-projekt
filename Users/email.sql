@@ -1,8 +1,8 @@
-CREATE TABLE Email (
+CREATE TABLE email (
     id SERIAL PRIMARY KEY, 
     email VARCHAR UNIQUE NOT NULL, 
     link VARCHAR, 
-    linkExpiredDate TIMESTAMP, 
-    isVerified BOOLEAN DEFAULT FALSE NOT NULL, 
-    verifiedDate TIMESTAMP 
+    linkexpiredate TIMESTAMP, 
+    isverified BOOLEAN DEFAULT FALSE NOT NULL, 
+    verifieddate TIMESTAMP 
 );
