@@ -1,5 +1,4 @@
 -- Insert address with coordinates
-begin transaction;
 
 CREATE OR REPLACE FUNCTION sp_insertAddressWithCoordinates(
     p_Country VARCHAR(100),
@@ -40,7 +39,7 @@ CREATE OR REPLACE FUNCTION sp_advertisementInArea(
     p_region VARCHAR(100) DEFAULT NULL,
     p_country VARCHAR(100) DEFAULT NULL
 )
-RETURNS TABLE(city VARCHAR, street VARCHAR, title VARCHAR, price NUMERIC) AS $$
+RETURNS TABLE(city VARCHAR, street VARCHAR, title VARCHAR, price FLOAT) AS $$
 BEGIN
     RETURN QUERY
     SELECT ad.city, ad.street, a.title, pr.price
@@ -57,28 +56,30 @@ $$ LANGUAGE plpgsql;
 
 
 -- doesn't work
+-- should work
 -- Shows all payments for a given user
--- CREATE OR REPLACE FUNCTION sp_user_payments(user_id INT)
--- RETURNS TABLE (
---     first_name VARCHAR,
---     last_name VARCHAR,
---     price NUMERIC,
---     creation_date TIMESTAMP,
---     status VARCHAR
--- ) AS $$
--- BEGIN
---     RETURN QUERY
---     SELECT u.firstName,
---            u.lastName,
---            p.price,
---            p.creationDate,
---            p.status
---     FROM Payment p
---     JOIN Advertisement a ON p.advertisementId = a.id
---     JOIN "User" u ON a.userId = u.id
---     WHERE u.id = user_id;
--- END;
--- $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION sp_user_payments(user_id INT)
+RETURNS TABLE (
+    first_name VARCHAR,
+    last_name VARCHAR,
+    price NUMERIC(4,2),
+    creation_date TIMESTAMP,
+    status VARCHAR
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.firstName,
+           u.lastName,
+           p.price,
+           p.creationDate,
+           p.status
+    FROM Payment p
+    JOIN Advertisement a ON p.advertisementId = a.id
+    JOIN "User" u ON a.userId = u.userId
+    WHERE u.userId = user_id;
+END;
+$$ LANGUAGE plpgsql;
+
 
 
 
@@ -380,4 +381,3 @@ BEGIN
     RAISE NOTICE 'Advertisement hidden successfully!';
 END;
 $$ LANGUAGE plpgsql;
-commit;
