@@ -48,13 +48,17 @@ $$;
 ALTER FUNCTION public.sp_accept_advertisement(advertisement_id integer) OWNER TO postgres;
 
 --
--- Name: sp_advertisementinarea(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: sp_advertisement_in_area(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.sp_advertisementinarea(p_city character varying DEFAULT NULL::character varying, p_region character varying DEFAULT NULL::character varying, p_country character varying DEFAULT NULL::character varying) RETURNS TABLE(city character varying, street character varying, title character varying, price numeric)
+CREATE FUNCTION public.sp_advertisement_in_area(p_city character varying DEFAULT NULL::character varying, p_region character varying DEFAULT NULL::character varying, p_country character varying DEFAULT NULL::character varying) RETURNS TABLE(city character varying, street character varying, title character varying, price integer)
     LANGUAGE plpgsql
     AS $$
+DECLARE
+    row_count INT;
 BEGIN
+    RAISE NOTICE 'p_city: %, p_region: %, p_country: %', p_city, p_region, p_country;
+
     RETURN QUERY
     SELECT ad.city, ad.street, a.title, pr.price
     FROM advertisement a
@@ -63,11 +67,14 @@ BEGIN
     WHERE (p_city IS NULL OR ad.city = p_city)
       AND (p_region IS NULL OR ad.region = p_region)
       AND (p_country IS NULL OR ad.country = p_country);
+
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Number of rows returned: %', row_count;
 END;
 $$;
 
 
-ALTER FUNCTION public.sp_advertisementinarea(p_city character varying, p_region character varying, p_country character varying) OWNER TO postgres;
+ALTER FUNCTION public.sp_advertisement_in_area(p_city character varying, p_region character varying, p_country character varying) OWNER TO postgres;
 
 --
 -- Name: sp_delete_advertisement(integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -580,6 +587,30 @@ $$;
 
 ALTER FUNCTION public.sp_update_payment(id integer, price numeric, status character varying) OWNER TO postgres;
 
+--
+-- Name: sp_user_payments(integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_user_payments(user_id integer) RETURNS TABLE(first_name character varying, last_name character varying, price numeric, creation_date date, status character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.name,
+           u.surname,
+           p.price,
+           p.creationDate,
+           p.status
+    FROM Payment p
+    JOIN Advertisement a ON p.Id = a.paymentid
+    JOIN Users u ON a.userId = u.Id
+    WHERE u.Id = user_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_user_payments(user_id integer) OWNER TO postgres;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -624,39 +655,6 @@ ALTER SEQUENCE public.address_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.address_id_seq OWNED BY public.address.id;
 
-
---
--- Name: coordinates; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.coordinates (
-    id integer NOT NULL,
-    latitude double precision,
-    longitude double precision
-);
-
-
-ALTER TABLE public.coordinates OWNER TO postgres;
-
---
--- Name: address_view; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.address_view AS
- SELECT a.country,
-    a.region,
-    a.postalcode,
-    a.city,
-    a.street,
-    a.buildingnum,
-    a.flatnum,
-    c.latitude,
-    c.longitude
-   FROM (public.address a
-     LEFT JOIN public.coordinates c ON ((a.coordinatesid = c.id)));
-
-
-ALTER VIEW public.address_view OWNER TO postgres;
 
 --
 -- Name: advertisement; Type: TABLE; Schema: public; Owner: postgres
@@ -816,6 +814,19 @@ ALTER SEQUENCE public.complaint_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.complaint_id_seq OWNED BY public.complaint.id;
 
+
+--
+-- Name: coordinates; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.coordinates (
+    id integer NOT NULL,
+    latitude double precision,
+    longitude double precision
+);
+
+
+ALTER TABLE public.coordinates OWNER TO postgres;
 
 --
 -- Name: coordinates_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1182,6 +1193,26 @@ CREATE VIEW public.view_active_complaints AS
 
 
 ALTER VIEW public.view_active_complaints OWNER TO postgres;
+
+--
+-- Name: view_addresses; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_addresses AS
+ SELECT a.country,
+    a.region,
+    a.postalcode,
+    a.city,
+    a.street,
+    a.buildingnum,
+    a.flatnum,
+    c.latitude,
+    c.longitude
+   FROM (public.address a
+     LEFT JOIN public.coordinates c ON ((a.coordinatesid = c.id)));
+
+
+ALTER VIEW public.view_addresses OWNER TO postgres;
 
 --
 -- Name: view_advertisements; Type: VIEW; Schema: public; Owner: postgres

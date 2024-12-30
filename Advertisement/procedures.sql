@@ -32,14 +32,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- nie dziala
+-- now works
 -- Function to show all advertisements in a given area
-CREATE OR REPLACE FUNCTION sp_advertisementInArea(
+CREATE OR REPLACE FUNCTION sp_advertisement_in_area(
     p_city VARCHAR(100) DEFAULT NULL,
     p_region VARCHAR(100) DEFAULT NULL,
     p_country VARCHAR(100) DEFAULT NULL
 )
-RETURNS TABLE(city VARCHAR, street VARCHAR, title VARCHAR, price FLOAT) AS $$
+RETURNS TABLE(city VARCHAR, street VARCHAR, title VARCHAR, price INT) AS $$
 BEGIN
     RETURN QUERY
     SELECT ad.city, ad.street, a.title, pr.price
@@ -51,7 +51,9 @@ BEGIN
       AND (p_country IS NULL OR ad.country = p_country);
 END;
 $$ LANGUAGE plpgsql;
--- do pop
+-- Example usage:
+-- SELECT * 
+-- FROM sp_advertisement_in_area('Wrocław', NULL, NULL);
 
 
 
@@ -63,22 +65,25 @@ RETURNS TABLE (
     first_name VARCHAR,
     last_name VARCHAR,
     price NUMERIC(4,2),
-    creation_date TIMESTAMP,
+    creation_date DATE,
     status VARCHAR
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT u.firstName,
-           u.lastName,
+    SELECT u.name,
+           u.surname,
            p.price,
            p.creationDate,
            p.status
     FROM Payment p
-    JOIN Advertisement a ON p.advertisementId = a.id
-    JOIN "User" u ON a.userId = u.userId
-    WHERE u.userId = user_id;
+    JOIN Advertisement a ON p.Id = a.paymentid
+    JOIN Users u ON a.userId = u.Id
+    WHERE u.Id = user_id;
 END;
 $$ LANGUAGE plpgsql;
+-- Example usage:
+-- SELECT *
+-- FROM sp_user_payments(4);
 
 
 
