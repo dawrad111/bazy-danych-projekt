@@ -86,3 +86,60 @@ LIMIT 10;
 SELECT COUNT(*) AS registered_last_month
 FROM Users
 WHERE registrationDate >= CURRENT_DATE - INTERVAL '1 month';
+
+CREATE OR REPLACE FUNCTION sp_insert_into_users(
+    name VARCHAR,
+    surname VARCHAR,
+    password_hash VARCHAR,
+    email_address VARCHAR,
+    phone_number TEXT,
+    user_type VARCHAR,
+    registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR DEFAULT 'active',
+    is_verified BOOLEAN DEFAULT FALSE
+)
+RETURNS VOID AS $$
+DECLARE
+    email_id INT;
+    phone_number_id INT;
+BEGIN
+    IF user_type NOT IN ('operator', 'administrator', 'user') THEN
+        RAISE EXCEPTION 'Error: Invalid user type value (%). Allowed values: operator, administrator, user.', user_type;
+    END IF;
+
+    IF status NOT IN ('active', 'suspended') THEN
+        RAISE EXCEPTION 'Error: Invalid status value (%). Allowed values: active, suspended.', status;
+    END IF;
+
+    SELECT e.id INTO email_id
+    FROM email e
+    WHERE e.email = email_address;
+
+    IF email_id IS NULL THEN
+        INSERT INTO email (email, isverified)
+        VALUES (email_address, FALSE)
+        RETURNING id INTO email_id;
+    END IF;
+
+    SELECT pn.id INTO phone_number_id
+    FROM phone_number pn
+    WHERE pn.phoneNumber = phone_number;
+
+    IF phone_number_id IS NULL THEN
+        INSERT INTO phone_number (phoneNumber, isVerified)
+        VALUES (phone_number, FALSE)
+        RETURNING id INTO phone_number_id;
+    END IF;
+
+    INSERT INTO Users (
+        name, surname, passwordHash, emailId, phoneNumberId,
+        registrationDate, userType, status, isVerified
+    )
+    VALUES (
+        name, surname, password_hash, email_id, phone_number_id,
+        registration_date, user_type, status, is_verified
+    );
+
+    RAISE NOTICE 'User added successfully with email: % and phone number: %.', email_address, phone_number;
+END;
+$$ LANGUAGE plpgsql;
