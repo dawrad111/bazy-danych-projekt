@@ -37,7 +37,7 @@ BEGIN
 
     -- Update Advertisement status to 'Posted'
     UPDATE Advertisement
-    SET status = 'Posted'
+    SET status = 'posted'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement posted successfully!';
@@ -54,11 +54,7 @@ ALTER FUNCTION public.sp_accept_advertisement(advertisement_id integer) OWNER TO
 CREATE FUNCTION public.sp_advertisement_in_area(p_city character varying DEFAULT NULL::character varying, p_region character varying DEFAULT NULL::character varying, p_country character varying DEFAULT NULL::character varying) RETURNS TABLE(city character varying, street character varying, title character varying, price integer)
     LANGUAGE plpgsql
     AS $$
-DECLARE
-    row_count INT;
 BEGIN
-    RAISE NOTICE 'p_city: %, p_region: %, p_country: %', p_city, p_region, p_country;
-
     RETURN QUERY
     SELECT ad.city, ad.street, a.title, pr.price
     FROM advertisement a
@@ -67,9 +63,6 @@ BEGIN
     WHERE (p_city IS NULL OR ad.city = p_city)
       AND (p_region IS NULL OR ad.region = p_region)
       AND (p_country IS NULL OR ad.country = p_country);
-
-    GET DIAGNOSTICS row_count = ROW_COUNT;
-    RAISE NOTICE 'Number of rows returned: %', row_count;
 END;
 $$;
 
@@ -105,7 +98,7 @@ BEGIN
 
     -- Delete payments related to Advertisement
     DELETE FROM Payment
-    WHERE advertisementId = advertisement_id;
+    WHERE advertisementId = advertisementid;
 
     -- Delete photos related to Object
     DELETE FROM Photos
@@ -194,6 +187,75 @@ $$;
 
 
 ALTER FUNCTION public.sp_edit_advertisement(advertisement_id integer, new_status character varying, new_title character varying) OWNER TO postgres;
+
+--
+-- Name: sp_edit_comment(integer, character varying, text, timestamp without time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_edit_comment(comment_id integer, new_status character varying DEFAULT NULL::character varying, new_content text DEFAULT NULL::text, new_hide_date timestamp without time zone DEFAULT NULL::timestamp without time zone) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM comment
+        WHERE id = comment_id
+    ) THEN
+        RAISE EXCEPTION 'Error: Comment with ID % does not exist.', comment_id;
+    END IF;
+
+    IF new_status IS NOT NULL AND new_status NOT IN ('active', 'suspended') THEN
+        RAISE EXCEPTION 'Error: Invalid status value (%). Allowed values: active, suspended.', new_status;
+    END IF;
+
+    UPDATE comment
+    SET
+        status = COALESCE(new_status, status),
+        content = COALESCE(new_content, content),
+        hideDate = COALESCE(new_hide_date, hideDate),
+        lastModificationDate = CURRENT_TIMESTAMP
+    WHERE id = comment_id;
+
+    RAISE NOTICE 'Comment with ID % updated successfully!', comment_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_edit_comment(comment_id integer, new_status character varying, new_content text, new_hide_date timestamp without time zone) OWNER TO postgres;
+
+--
+-- Name: sp_edit_complaint(integer, character varying, text, timestamp without time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_edit_complaint(complaint_id integer, new_status character varying DEFAULT NULL::character varying, new_content text DEFAULT NULL::text, new_solution_date timestamp without time zone DEFAULT NULL::timestamp without time zone) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM complaint
+        WHERE id = complaint_id
+    ) THEN
+        RAISE EXCEPTION 'Error: Complaint with ID % does not exist.', complaint_id;
+    END IF;
+
+    IF new_status IS NOT NULL AND new_status NOT IN ('active', 'resolved', 'suspended') THEN
+        RAISE EXCEPTION 'Error: Invalid status value (%). Allowed values: active, resolved, suspended.', new_status;
+    END IF;
+
+    UPDATE complaint
+    SET
+        status = COALESCE(new_status, status),
+        content = COALESCE(new_content, content),
+        solutionDate = COALESCE(new_solution_date, solutionDate)
+    WHERE id = complaint_id;
+
+    RAISE NOTICE 'Complaint with ID % updated successfully!', complaint_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_edit_complaint(complaint_id integer, new_status character varying, new_content text, new_solution_date timestamp without time zone) OWNER TO postgres;
 
 --
 -- Name: sp_edit_coordinates(integer, double precision, double precision); Type: FUNCTION; Schema: public; Owner: postgres
@@ -355,6 +417,46 @@ $$;
 ALTER FUNCTION public.sp_edit_price(price_id integer, new_price double precision, new_rent double precision, new_media double precision, new_typeofpayment character varying, new_deposit double precision, new_typeofowner character varying) OWNER TO postgres;
 
 --
+-- Name: sp_get_user_by_email(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_get_user_by_email(p_email character varying) RETURNS TABLE(user_id integer, name character varying, surname character varying, email character varying, phone_number character varying, registration_date timestamp without time zone, status character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        userId, name, surname, email, phoneNumber, registrationDate, status
+    FROM Users
+    WHERE email = p_email;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_get_user_by_email(p_email character varying) OWNER TO postgres;
+
+--
+-- Name: sp_get_user_logs(integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_get_user_logs(p_user_id integer) RETURNS TABLE(user_id integer, name character varying, surname character varying, activity_type character varying, log_time timestamp without time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        l.userId, u.name, u.surname, l.activityType, l.time
+    FROM Logs l
+    JOIN Users u ON l.userId = u.userId
+    WHERE u.userId = p_user_id
+    ORDER BY l.time DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_get_user_logs(p_user_id integer) OWNER TO postgres;
+
+--
 -- Name: sp_hide_advertisement(integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -374,7 +476,7 @@ BEGIN
 
     -- Hide the advertisement
     UPDATE Advertisement
-    SET status = 'Hidden'
+    SET status = 'hidden'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement hidden successfully!';
@@ -404,7 +506,7 @@ BEGIN
 
     -- Hide the advertisement
     UPDATE Advertisement
-    SET status = 'Hidden'
+    SET status = 'hidden'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement hidden successfully!';
@@ -413,6 +515,143 @@ $$;
 
 
 ALTER FUNCTION public.sp_hideadvertisement(advertisement_id integer) OWNER TO postgres;
+
+--
+-- Name: sp_insert_email(character varying, character varying, timestamp without time zone, boolean); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_email(p_email character varying, p_link character varying, p_link_expired_date timestamp without time zone, p_is_verified boolean) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Insert into Email table
+    INSERT INTO Email (
+        email, link, linkExpiredDate, isVerified, verifiedDate
+    )
+    VALUES (
+        p_email, p_link, p_link_expired_date, p_is_verified, NULL
+    );
+
+    RAISE NOTICE 'Email inserted successfully.';
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_email(p_email character varying, p_link character varying, p_link_expired_date timestamp without time zone, p_is_verified boolean) OWNER TO postgres;
+
+--
+-- Name: sp_insert_into_bumpcount(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_into_bumpcount(user_id integer, comment_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Users
+        WHERE id = user_id
+    ) THEN
+        RAISE EXCEPTION 'Error: User with ID % does not exist.', user_id;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM comment
+        WHERE id = comment_id
+    ) THEN
+        RAISE EXCEPTION 'Error: Comment with ID % does not exist.', comment_id;
+    END IF;
+
+    INSERT INTO bumpCount (
+        userId, commentId
+    )
+    VALUES (
+        user_id, comment_id
+    );
+
+    RAISE NOTICE 'Bump added successfully for User ID % and Comment ID %.', user_id, comment_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_into_bumpcount(user_id integer, comment_id integer) OWNER TO postgres;
+
+--
+-- Name: sp_insert_into_comment(integer, integer, text, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_into_comment(user_id integer, advertisement_id integer, content text, status character varying DEFAULT 'active'::character varying) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM users
+        WHERE id = user_id
+    ) THEN
+        RAISE EXCEPTION 'Error: User with ID % does not exist.', user_id;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM advertisement
+        WHERE id = advertisement_id
+    ) THEN
+        RAISE EXCEPTION 'Error: Advertisement with ID % does not exist.', advertisement_id;
+    END IF;
+
+    IF status NOT IN ('active', 'suspended') THEN
+        RAISE EXCEPTION 'Error: Invalid status value (%). Allowed values: active, suspended.', status;
+    END IF;
+
+    INSERT INTO comment (
+        userId, advertisementId, content, status
+    )
+    VALUES (
+        user_id, advertisement_id, content, status
+    );
+
+    RAISE NOTICE 'Comment added successfully for User ID % and Advertisement ID %.', user_id, advertisement_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_into_comment(user_id integer, advertisement_id integer, content text, status character varying) OWNER TO postgres;
+
+--
+-- Name: sp_insert_into_complaint(integer, text, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_into_complaint(user_id integer, content text, status character varying DEFAULT 'active'::character varying) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM users
+        WHERE id = user_id
+    ) THEN
+        RAISE EXCEPTION 'Error: User with ID % does not exist.', user_id;
+    END IF;
+
+    IF status NOT IN ('active', 'resolved', 'suspended') THEN
+        RAISE EXCEPTION 'Error: Invalid status value (%). Allowed values: active, resolved, suspended.', status;
+    END IF;
+
+    INSERT INTO complaint (
+        userId, content, status
+    )
+    VALUES (
+        user_id, content, status
+    );
+
+    RAISE NOTICE 'Complaint added successfully for User ID %.', user_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_into_complaint(user_id integer, content text, status character varying) OWNER TO postgres;
 
 --
 -- Name: sp_insert_into_house(integer, double precision, double precision, double precision); Type: FUNCTION; Schema: public; Owner: postgres
@@ -473,20 +712,98 @@ ALTER FUNCTION public.sp_insert_into_object(square_footage double precision, des
 -- Name: sp_insert_into_price(double precision, character varying, character varying, double precision, double precision, double precision); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.sp_insert_into_price(price double precision, type_of_payment character varying, type_owner character varying, rent double precision DEFAULT NULL::double precision, media double precision DEFAULT NULL::double precision, deposit double precision DEFAULT NULL::double precision) RETURNS void
+CREATE FUNCTION public.sp_insert_into_price(price double precision, type_of_payment character varying, type_of_owner character varying, rent double precision DEFAULT NULL::double precision, media double precision DEFAULT NULL::double precision, deposit double precision DEFAULT NULL::double precision) RETURNS void
     LANGUAGE plpgsql
     AS $$
 BEGIN
     -- Insert a new record into the Price table
-    INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
-    VALUES (price, rent, media, deposit, type_of_payment, type_owner);
+    INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOfOwner)
+    VALUES (price, rent, media, deposit, type_of_payment, type_of_owner);
 
     RAISE NOTICE 'Price inserted successfully!';
 END;
 $$;
 
 
-ALTER FUNCTION public.sp_insert_into_price(price double precision, type_of_payment character varying, type_owner character varying, rent double precision, media double precision, deposit double precision) OWNER TO postgres;
+ALTER FUNCTION public.sp_insert_into_price(price double precision, type_of_payment character varying, type_of_owner character varying, rent double precision, media double precision, deposit double precision) OWNER TO postgres;
+
+--
+-- Name: sp_insert_into_users(character varying, character varying, character varying, character varying, text, character varying, timestamp without time zone, character varying, boolean); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_into_users(name character varying, surname character varying, password_hash character varying, email_address character varying, phone_number text, user_type character varying, registration_date timestamp without time zone DEFAULT CURRENT_TIMESTAMP, status character varying DEFAULT 'active'::character varying, is_verified boolean DEFAULT false) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    email_id INT;
+    phone_number_id INT;
+BEGIN
+    IF user_type NOT IN ('operator', 'administrator', 'user') THEN
+        RAISE EXCEPTION 'Error: Invalid user type value (%). Allowed values: operator, administrator, user.', user_type;
+    END IF;
+
+    IF status NOT IN ('active', 'suspended') THEN
+        RAISE EXCEPTION 'Error: Invalid status value (%). Allowed values: active, suspended.', status;
+    END IF;
+
+    SELECT e.id INTO email_id
+    FROM email e
+    WHERE e.email = email_address;
+
+    IF email_id IS NULL THEN
+        INSERT INTO email (email, isverified)
+        VALUES (email_address, FALSE)
+        RETURNING id INTO email_id;
+    END IF;
+
+    SELECT pn.id INTO phone_number_id
+    FROM phone_number pn
+    WHERE pn.phoneNumber = phone_number;
+
+    IF phone_number_id IS NULL THEN
+        INSERT INTO phone_number (phoneNumber, isVerified)
+        VALUES (phone_number, FALSE)
+        RETURNING id INTO phone_number_id;
+    END IF;
+
+    INSERT INTO Users (
+        name, surname, passwordHash, emailId, phoneNumberId,
+        registrationDate, userType, status, isVerified
+    )
+    VALUES (
+        name, surname, password_hash, email_id, phone_number_id,
+        registration_date, user_type, status, is_verified
+    );
+
+    RAISE NOTICE 'User added successfully with email: % and phone number: %.', email_address, phone_number;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_into_users(name character varying, surname character varying, password_hash character varying, email_address character varying, phone_number text, user_type character varying, registration_date timestamp without time zone, status character varying, is_verified boolean) OWNER TO postgres;
+
+--
+-- Name: sp_insert_log(integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_log(p_user_id integer, p_activity_type character varying) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Insert into Logs table
+    INSERT INTO Logs (
+        userId, activityType, time
+    )
+    VALUES (
+        p_user_id, p_activity_type, CURRENT_TIMESTAMP
+    );
+
+    RAISE NOTICE 'Log entry inserted successfully.';
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_log(p_user_id integer, p_activity_type character varying) OWNER TO postgres;
 
 --
 -- Name: sp_insert_payment(numeric, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -505,6 +822,29 @@ $$;
 
 
 ALTER FUNCTION public.sp_insert_payment(price numeric, advertisement_id integer) OWNER TO postgres;
+
+--
+-- Name: sp_insert_phone_number(character varying, character varying, timestamp without time zone, boolean); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_insert_phone_number(p_phone_number character varying, p_code character varying, p_link_expired_date timestamp without time zone, p_is_verified boolean) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Insert into phonenumber table
+    INSERT INTO phoneNumber (
+        phoneNumber, code, linkExpiredDate, isVerified, VerifiedDate
+    )
+    VALUES (
+        p_phone_number, p_code, p_link_expired_date, p_is_verified, NULL
+    );
+
+    RAISE NOTICE 'Phone number inserted successfully.';
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_insert_phone_number(p_phone_number character varying, p_code character varying, p_link_expired_date timestamp without time zone, p_is_verified boolean) OWNER TO postgres;
 
 --
 -- Name: sp_insertaddresswithcoordinates(character varying, character varying, character varying, character varying, character varying, character varying, integer, double precision, double precision); Type: FUNCTION; Schema: public; Owner: postgres
@@ -536,6 +876,34 @@ $$;
 ALTER FUNCTION public.sp_insertaddresswithcoordinates(p_country character varying, p_region character varying, p_postalcode character varying, p_city character varying, p_street character varying, p_buildingnum character varying, p_flatnum integer, p_latitude double precision, p_longitude double precision) OWNER TO postgres;
 
 --
+-- Name: sp_remove_bump(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_remove_bump(p_user_id integer, p_comment_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM bumpCount
+        WHERE userId = p_user_id
+          AND commentId = p_comment_id
+    ) THEN
+        RAISE EXCEPTION 'Error: Like not found for user % on comment %.', p_user_id, p_comment_id;
+    END IF;
+
+    DELETE FROM bumpCount
+    WHERE userId = p_user_id
+      AND commentId = p_comment_id;
+
+    RAISE NOTICE 'Like removed successfully for user % on comment %.', p_user_id, p_comment_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_remove_bump(p_user_id integer, p_comment_id integer) OWNER TO postgres;
+
+--
 -- Name: sp_suspend_advertisement(integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -555,7 +923,7 @@ BEGIN
 
     -- Suspend the advertisement
     UPDATE Advertisement
-    SET status = 'Suspended'
+    SET status = 'suspended'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement suspended successfully!';
@@ -569,15 +937,15 @@ ALTER FUNCTION public.sp_suspend_advertisement(advertisement_id integer) OWNER T
 -- Name: sp_update_payment(integer, numeric, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.sp_update_payment(id integer, price numeric DEFAULT NULL::numeric, status character varying DEFAULT NULL::character varying) RETURNS void
+CREATE FUNCTION public.sp_update_payment(id integer, new_price numeric DEFAULT NULL::numeric, new_status character varying DEFAULT NULL::character varying) RETURNS void
     LANGUAGE plpgsql
     AS $$
 BEGIN
     -- Update Payment
     UPDATE Payment
     SET
-        price = COALESCE(price, price),
-        status = COALESCE(status, status)
+        price = COALESCE(price, new_price),
+        status = COALESCE(status, new_status)
     WHERE id = id;
 
     RAISE NOTICE 'Payment updated successfully!';
@@ -585,7 +953,31 @@ END;
 $$;
 
 
-ALTER FUNCTION public.sp_update_payment(id integer, price numeric, status character varying) OWNER TO postgres;
+ALTER FUNCTION public.sp_update_payment(id integer, new_price numeric, new_status character varying) OWNER TO postgres;
+
+--
+-- Name: sp_update_user(integer, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_update_user(p_user_id integer, p_name character varying, p_surname character varying, p_email character varying, p_phone_number character varying, p_password_hash character varying) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE Users
+    SET
+        name = p_name,
+        surname = p_surname,
+        email = p_email,
+        phoneNumber = p_phone_number,
+        passwordHash = p_password_hash
+    WHERE userId = p_user_id;
+
+    RAISE NOTICE 'User data updated successfully.';
+END;
+$$;
+
+
+ALTER FUNCTION public.sp_update_user(p_user_id integer, p_name character varying, p_surname character varying, p_email character varying, p_phone_number character varying, p_password_hash character varying) OWNER TO postgres;
 
 --
 -- Name: sp_user_payments(integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -602,7 +994,7 @@ BEGIN
            p.creationDate,
            p.status
     FROM Payment p
-    JOIN Advertisement a ON p.Id = a.paymentid
+    JOIN Advertisement a ON p.advertisementId = a.id
     JOIN Users u ON a.userId = u.Id
     WHERE u.Id = user_id;
 END;
@@ -672,7 +1064,7 @@ CREATE TABLE public.advertisement (
     paymentid integer,
     priceid integer,
     objectid integer,
-    CONSTRAINT advertisement_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'posted'::character varying, 'ended'::character varying, 'canceled'::character varying, 'suspended'::character varying])::text[])))
+    CONSTRAINT advertisement_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'posted'::character varying, 'ended'::character varying, 'canceled'::character varying, 'suspended'::character varying, 'hidden'::character varying])::text[])))
 );
 
 
@@ -1013,7 +1405,8 @@ CREATE TABLE public.payment (
     price numeric(4,2) NOT NULL,
     creationdate date DEFAULT CURRENT_TIMESTAMP,
     status character varying(12) DEFAULT 'pending'::character varying NOT NULL,
-    CONSTRAINT payment_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'ended'::character varying, 'suspended'::character varying])::text[])))
+    advertisementid integer,
+    CONSTRAINT payment_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'ended'::character varying, 'suspended'::character varying, 'hidden'::character varying])::text[])))
 );
 
 
@@ -1195,6 +1588,20 @@ CREATE VIEW public.view_active_complaints AS
 ALTER VIEW public.view_active_complaints OWNER TO postgres;
 
 --
+-- Name: view_active_users_by_role; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_active_users_by_role AS
+ SELECT usertype,
+    count(*) AS user_count
+   FROM public.users
+  WHERE ((status)::text = 'active'::text)
+  GROUP BY usertype;
+
+
+ALTER VIEW public.view_active_users_by_role OWNER TO postgres;
+
+--
 -- Name: view_addresses; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -1313,6 +1720,61 @@ CREATE VIEW public.view_all_user_advertisements AS
 ALTER VIEW public.view_all_user_advertisements OWNER TO postgres;
 
 --
+-- Name: view_inactive_users_last_30_days; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_inactive_users_last_30_days AS
+ SELECT u.id,
+    u.name,
+    u.surname,
+    e.email,
+    u.lastlogindate
+   FROM (public.users u
+     LEFT JOIN public.email e ON ((u.emailid = e.id)))
+  WHERE ((u.lastlogindate < (CURRENT_DATE - '30 days'::interval)) OR (u.lastlogindate IS NULL));
+
+
+ALTER VIEW public.view_inactive_users_last_30_days OWNER TO postgres;
+
+--
+-- Name: view_latest_user_logins; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_latest_user_logins AS
+ SELECT l.userid,
+    u.name,
+    u.surname,
+    l.activitytype,
+    l."time"
+   FROM (public.logs l
+     JOIN public.users u ON ((l.userid = u.id)))
+  WHERE ((l.activitytype)::text = 'login'::text)
+  ORDER BY l."time" DESC
+ LIMIT 10;
+
+
+ALTER VIEW public.view_latest_user_logins OWNER TO postgres;
+
+--
+-- Name: view_logs_last_24h; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_logs_last_24h AS
+ SELECT l.id,
+    l.userid,
+    u.name,
+    u.surname,
+    l.activitytype,
+    l."time"
+   FROM (public.logs l
+     JOIN public.users u ON ((l.userid = u.id)))
+  WHERE (l."time" >= (CURRENT_TIMESTAMP - '1 day'::interval))
+  ORDER BY l."time" DESC;
+
+
+ALTER VIEW public.view_logs_last_24h OWNER TO postgres;
+
+--
 -- Name: view_only_photos; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -1357,6 +1819,57 @@ CREATE VIEW public.view_prices AS
 ALTER VIEW public.view_prices OWNER TO postgres;
 
 --
+-- Name: view_suspended_users; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_suspended_users AS
+ SELECT u.id,
+    u.name,
+    u.surname,
+    e.email,
+    u.status,
+    u.registrationdate
+   FROM (public.users u
+     JOIN public.email e ON ((e.id = u.emailid)))
+  WHERE ((u.status)::text = 'suspended'::text)
+  ORDER BY u.registrationdate DESC;
+
+
+ALTER VIEW public.view_suspended_users OWNER TO postgres;
+
+--
+-- Name: view_unverified_users; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_unverified_users AS
+ SELECT u.id,
+    u.name,
+    u.surname,
+    e.email,
+    pn.phonenumber,
+    u.registrationdate
+   FROM ((public.users u
+     LEFT JOIN public.phone_number pn ON ((u.phonenumberid = pn.id)))
+     LEFT JOIN public.email e ON ((u.emailid = e.id)))
+  WHERE ((u.isverified = false) AND (pn.isverified = false) AND (e.isverified = false));
+
+
+ALTER VIEW public.view_unverified_users OWNER TO postgres;
+
+--
+-- Name: view_user_count_by_status; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_user_count_by_status AS
+ SELECT status,
+    count(*) AS user_count
+   FROM public.users
+  GROUP BY status;
+
+
+ALTER VIEW public.view_user_count_by_status OWNER TO postgres;
+
+--
 -- Name: view_user_payments; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -1367,7 +1880,7 @@ CREATE VIEW public.view_user_payments AS
     p.creationdate,
     p.status
    FROM ((public.payment p
-     JOIN public.advertisement a ON ((p.id = a.paymentid)))
+     JOIN public.advertisement a ON ((p.advertisementid = a.id)))
      JOIN public.users u ON ((a.userid = u.id)));
 
 
@@ -1384,12 +1897,42 @@ CREATE VIEW public.view_user_payments_sorted AS
     p.creationdate,
     p.status
    FROM ((public.payment p
-     JOIN public.advertisement a ON ((p.id = a.paymentid)))
+     JOIN public.advertisement a ON ((p.advertisementid = a.id)))
      JOIN public.users u ON ((a.userid = u.id)))
   ORDER BY p.price DESC;
 
 
 ALTER VIEW public.view_user_payments_sorted OWNER TO postgres;
+
+--
+-- Name: view_users_logged_last_7_days; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_users_logged_last_7_days AS
+ SELECT u.id,
+    u.name,
+    u.surname,
+    e.email,
+    u.lastlogindate
+   FROM (public.users u
+     JOIN public.email e ON ((u.emailid = e.id)))
+  WHERE (u.lastlogindate >= (CURRENT_DATE - '7 days'::interval))
+  ORDER BY u.lastlogindate DESC;
+
+
+ALTER VIEW public.view_users_logged_last_7_days OWNER TO postgres;
+
+--
+-- Name: view_users_registered_last_month; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.view_users_registered_last_month AS
+ SELECT count(*) AS registered_last_month
+   FROM public.users
+  WHERE (registrationdate >= (CURRENT_DATE - '1 mon'::interval));
+
+
+ALTER VIEW public.view_users_registered_last_month OWNER TO postgres;
 
 --
 -- Name: address id; Type: DEFAULT; Schema: public; Owner: postgres
@@ -1689,17 +2232,17 @@ COPY public.object (id, squarefootage, description, rooms, bathrooms, basementsq
 -- Data for Name: payment; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.payment (id, price, creationdate, status) FROM stdin;
-1	10.00	2024-12-29	ended
-2	15.50	2024-12-29	pending
-3	20.00	2024-12-29	ended
-4	10.00	2024-12-29	suspended
-5	25.00	2024-12-29	ended
-6	50.00	2024-12-29	pending
-7	12.00	2024-12-29	suspended
-8	30.00	2024-12-29	ended
-9	8.00	2024-12-29	pending
-10	40.00	2024-12-29	ended
+COPY public.payment (id, price, creationdate, status, advertisementid) FROM stdin;
+1	10.00	2024-12-29	ended	36
+2	15.50	2024-12-29	pending	37
+3	20.00	2024-12-29	ended	38
+4	10.00	2024-12-29	suspended	39
+5	25.00	2024-12-29	ended	40
+6	50.00	2024-12-29	pending	41
+7	12.00	2024-12-29	suspended	42
+8	30.00	2024-12-29	ended	43
+9	8.00	2024-12-29	pending	44
+10	40.00	2024-12-29	ended	45
 \.
 
 
@@ -2100,6 +2643,14 @@ ALTER TABLE ONLY public.logs
 
 ALTER TABLE ONLY public.object
     ADD CONSTRAINT object_typeid_fkey FOREIGN KEY (typeid) REFERENCES public.house(id);
+
+
+--
+-- Name: payment payment_advertisementid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.payment
+    ADD CONSTRAINT payment_advertisementid_fkey FOREIGN KEY (advertisementid) REFERENCES public.advertisement(id);
 
 
 --

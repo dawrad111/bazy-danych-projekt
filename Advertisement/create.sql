@@ -42,5 +42,5 @@ CREATE TABLE payment
     price           NUMERIC(4, 2) not null,
     creationDate    DATE                   default CURRENT_TIMESTAMP,
     advertisementId INT references advertisement (id),
-    status          VARCHAR(12)   not null default 'pending' CHECK (status in ('pending', 'ended', 'suspended')),
+    status          VARCHAR(12)   not null default 'pending' CHECK (status in ('pending', 'ended', 'suspended', 'hidden')),
 );

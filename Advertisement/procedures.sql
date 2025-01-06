@@ -113,7 +113,7 @@ BEGIN
 
     -- Delete payments related to Advertisement
     DELETE FROM Payment
-    WHERE advertisementId = advertisement_id;
+    WHERE advertisementId = advertisementid;
 
     -- Delete photos related to Object
     DELETE FROM Photos
@@ -234,16 +234,16 @@ $$ LANGUAGE plpgsql;
 -- Update payment values if not null
 CREATE OR REPLACE FUNCTION sp_update_payment(
     id INT,
-    price NUMERIC(4, 2) DEFAULT NULL,
-    status VARCHAR(12) DEFAULT NULL
+    new_price NUMERIC(4, 2) DEFAULT NULL,
+    new_status VARCHAR(12) DEFAULT NULL
 )
 RETURNS VOID AS $$
 BEGIN
     -- Update Payment
     UPDATE Payment
     SET
-        price = COALESCE(price, price),
-        status = COALESCE(status, status)
+        price = COALESCE(price, new_price),
+        status = COALESCE(status, new_status)
     WHERE id = id;
 
     RAISE NOTICE 'Payment updated successfully!';

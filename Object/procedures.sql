@@ -61,7 +61,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION sp_insert_into_price(
     price FLOAT,
         type_of_payment VARCHAR(50),
-    type_owner VARCHAR(50),
+    type_of_owner VARCHAR(50),
     rent FLOAT DEFAULT NULL,
     media FLOAT DEFAULT NULL,
     deposit FLOAT DEFAULT NULL
@@ -70,7 +70,7 @@ RETURNS VOID AS $$
 BEGIN
     -- Insert a new record into the Price table
     INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOfOwner)
-    VALUES (price, rent, media, deposit, type_of_payment, type_owner);
+    VALUES (price, rent, media, deposit, type_of_payment, type_of_owner);
 
     RAISE NOTICE 'Price inserted successfully!';
 END;

@@ -5,15 +5,19 @@ CREATE TABLE payment
     creationDate    DATE                   default CURRENT_TIMESTAMP,
     status          VARCHAR(12)   not null default 'pending' CHECK (status in ('pending', 'ended', 'suspended')),
     advertisementId INT NOT NULL REFERENCES advertisement(id);
-
+)
 INSERT INTO payment (price, status,advertisementId)
 VALUES (100, 'ended',1),
        (50.00, 'pending',2),
        (20.00, 'ended',2),
        (15.00, 'suspended',3),
-       (30.00),,4 RETURNING *;
+       (30.00,,4) RETURNING *;
 
 
+UPDATE payment
+SET advertisementid = advertisement.id 
+FROM advertisement
+WHERE advertisement.paymentid = payment.id
 -- CREATE VIEW userPaymentsView AS
 -- SELECT u.name,
 --        u.surName,

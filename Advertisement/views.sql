@@ -1,5 +1,5 @@
 
-CREATE VIEW address_view AS
+CREATE OR ALTER VIEW address_view AS
 SELECT a.country,
        a.region,
        a.postalCode,
@@ -45,7 +45,7 @@ FROM advertisement ad
 
 
 
-CREATE VIEW userPaymentsView AS
+CREATE OR ALTER VIEW view_user_payments AS
 SELECT u.name,
        u.surName,
        p.price,
@@ -54,6 +54,7 @@ SELECT u.name,
 FROM payment p
          JOIN advertisement a ON p.advertisementId = a.id
          JOIN users u ON a.userId = u.id;
+
 CREATE VIEW userPaymentsSortedView AS
 SELECT u.name,
        u.surName,
@@ -64,14 +65,3 @@ FROM payment p
          JOIN advertisement a ON p.advertisementId = a.id
          JOIN users u ON a.userId = u.id
 ORDER BY p.price DESC;
-
--- Pokazuje platnosc jaka nalezy uiscic podczas tworzenia ogloszenia
---Ten widok pokazuje, "c. kwota, którą użytkownik zostaje obciążony za dodanie ogłoszenia". Daje się mu ID ogłoszenia, które jest tworzone.
--- nie dziala
-CREATE VIEW advertPayment AS
-SELECT p.price,
-       p.creationDate,
-       p.status
-FROM payment p
-         JOIN advertisement a ON p.advertisementId = a.id
-WHERE a.id = @AdvertId;
