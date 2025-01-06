@@ -69,7 +69,7 @@ CREATE OR REPLACE FUNCTION sp_insert_into_price(
 RETURNS VOID AS $$
 BEGIN
     -- Insert a new record into the Price table
-    INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOwner)
+    INSERT INTO Price (price, rent, media, deposit, typeOfPayment, typeOfOwner)
     VALUES (price, rent, media, deposit, type_of_payment, type_owner);
 
     RAISE NOTICE 'Price inserted successfully!';

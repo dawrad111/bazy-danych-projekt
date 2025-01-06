@@ -3,14 +3,15 @@ CREATE TABLE payment
     id              SERIAL PRIMARY KEY,
     price           NUMERIC(4, 2) not null,
     creationDate    DATE                   default CURRENT_TIMESTAMP,
-    status          VARCHAR(12)   not null default 'pending' CHECK (status in ('pending', 'ended', 'suspended')));
+    status          VARCHAR(12)   not null default 'pending' CHECK (status in ('pending', 'ended', 'suspended')),
+    advertisementId INT NOT NULL REFERENCES advertisement(id);
 
-INSERT INTO payment (price, status)
-VALUES (100, 'ended'),
-       (50.00, 'pending'),
-       (20.00, 'ended'),
-       (15.00, 'suspended'),
-       (30.00) RETURNING *;
+INSERT INTO payment (price, status,advertisementId)
+VALUES (100, 'ended',1),
+       (50.00, 'pending',2),
+       (20.00, 'ended',2),
+       (15.00, 'suspended',3),
+       (30.00),,4 RETURNING *;
 
 
 -- CREATE VIEW userPaymentsView AS

@@ -5,7 +5,7 @@ CREATE TABLE advertisement
     endDate              DATE null,
     userId               INT references Users (id),
     addressId            INT references address (id),
-    status               VARCHAR(12)  not null default 'pending' CHECK (status IN ('pending', 'posted', 'ended', 'canceled', 'suspended')),
+    status               VARCHAR(12)  not null default 'pending' CHECK (status IN ('pending', 'posted', 'ended', 'canceled', 'suspended','hidden')),
     title                VARCHAR(150) not null,
     lastModificationDate TIMESTAMP             default current_timestamp,
     paymentId            INT references payment (id),

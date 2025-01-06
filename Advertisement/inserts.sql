@@ -21,22 +21,22 @@ RETURNING *;
 
 
 
-INSERT INTO advertisement (userId, addressId, status, title, paymentId, priceId, objectId)
-VALUES (1, 1, 'posted', 'Mieszkanie na sprzedaż', 1, 1, 2),
-(2, 2, 'posted', 'Mieszkanie na wynajem', 2, 2, 3),
-(3, 3, 'posted', 'Dom na sprzedaż', 3, 3, 4),
-(4, 4, 'posted', 'Dom na wynajem', 4, 4, 5),
-(5, 5, 'posted', 'Pokój na wynajem', 5, 5, 6),
-(1, 1, 'posted', 'Nowoczesne mieszkanie w centrum', 1, 1, 7),
-(2, 2, 'pending', 'Stylowe mieszkanie w sercu miasta', 2, 2, 8),
-(3, 3, 'posted', 'Dom z ogrodem na przedmieściach', 3, 3, 9),
-(4, 4, 'ended', 'Dom z garażem i basenem', 4, 4, 10),
-(5, 5, 'canceled', 'Przytulny pokój na wynajem', 5, 5, 11),
-(6, 6, 'suspended', 'Duży apartament z balkonem', 6, 6, 12),
-(7, 7, 'posted', 'Ekskluzywny dom w prestiżowej lokalizacji', 7, null, 13),
-(8, 8, 'pending', 'Przestronny pokój w świetnej lokalizacji', 8, null, 14),
-(9, 9, 'posted', 'Willa z widokiem na góry', 9, null, 5),
-(10, 10, 'ended', 'Mieszkanie do remontu w świetnej cenie', 10, null, 4)
+INSERT INTO advertisement (userId, addressId, status, title, priceId, objectId)
+VALUES (1, 1, 'posted', 'Mieszkanie na sprzedaż', 1, 2),
+(2, 2, 'posted', 'Mieszkanie na wynajem', 2, 3),
+(3, 3, 'posted', 'Dom na sprzedaż', 3, 4),
+(4, 4, 'posted', 'Dom na wynajem', 4, 5),
+(5, 5, 'posted', 'Pokój na wynajem', 5, 6),
+(1, 1, 'posted', 'Nowoczesne mieszkanie w centrum', 1, 7),
+(2, 2, 'pending', 'Stylowe mieszkanie w sercu miasta', 2, 8),
+(3, 3, 'posted', 'Dom z ogrodem na przedmieściach', 3, 9),
+(4, 4, 'ended', 'Dom z garażem i basenem', 4, 10),
+(5, 5, 'canceled', 'Przytulny pokój na wynajem', 5, 11),
+(6, 6, 'suspended', 'Duży apartament z balkonem', 6, 12),
+(7, 7, 'posted', 'Ekskluzywny dom w prestiżowej lokalizacji', null, 13),
+(8, 8, 'pending', 'Przestronny pokój w świetnej lokalizacji', null, 14),
+(9, 9, 'posted', 'Willa z widokiem na góry', null, 5),
+(10, 10, 'ended', 'Mieszkanie do remontu w świetnej cenie', null, 4)
 RETURNING *;
 
 
@@ -59,17 +59,17 @@ VALUES
 RETURNING *;
 
 
-INSERT INTO payment (price, status)
+INSERT INTO payment (price, status,advertisementId)
 VALUES
 -- Powiązane z ogłoszeniami z tabeli advertisement
-(10.00, 'ended'),      -- Powiązane z AdvertisementId 1
-(15.50, 'pending'),     -- Powiązane z AdvertisementId 2
-(20.00, 'ended'),      -- Powiązane z AdvertisementId 3
-(10.00, 'suspended'),  -- Powiązane z AdvertisementId 4
-(25.00, 'ended'),      -- Powiązane z AdvertisementId 5
-(50.00, 'pending'),     -- Powiązane z AdvertisementId 6
-(12.00, 'suspended'),  -- Powiązane z AdvertisementId 7
-(30.00, 'ended'),      -- Powiązane z AdvertisementId 8
-(8.00, 'pending'),     -- Powiązane z AdvertisementId 9
-(40.00, 'ended')      -- Powiązane z AdvertisementId 10
+(10.00, 'ended', 1),      -- Powiązane z AdvertisementId 1
+(15.50, 'pending', 2),     -- Powiązane z AdvertisementId 2
+(20.00, 'ended', 2),      -- Powiązane z AdvertisementId 3
+(10.00, 'suspended', 3),  -- Powiązane z AdvertisementId 4
+(25.00, 'ended', 1),      -- Powiązane z AdvertisementId 5
+(50.00, 'pending', 4),     -- Powiązane z AdvertisementId 6
+(12.00, 'suspended', 5),  -- Powiązane z AdvertisementId 7
+(30.00, 'ended', 1),      -- Powiązane z AdvertisementId 8
+(8.00, 'pending', 4),     -- Powiązane z AdvertisementId 9
+(40.00, 'ended', 3)      -- Powiązane z AdvertisementId 10
 RETURNING *;

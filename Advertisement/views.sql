@@ -52,7 +52,7 @@ SELECT u.name,
        p.creationDate,
        p.status
 FROM payment p
-         JOIN advertisement a ON p.id = a.paymentId
+         JOIN advertisement a ON p.advertisementId = a.id
          JOIN users u ON a.userId = u.id;
 CREATE VIEW userPaymentsSortedView AS
 SELECT u.name,
@@ -61,7 +61,7 @@ SELECT u.name,
        p.creationDate,
        p.status
 FROM payment p
-         JOIN advertisement a ON p.id = a.paymentId
+         JOIN advertisement a ON p.advertisementId = a.id
          JOIN users u ON a.userId = u.id
 ORDER BY p.price DESC;
 
@@ -73,5 +73,5 @@ SELECT p.price,
        p.creationDate,
        p.status
 FROM payment p
-         JOIN advertisement a ON p.id = a.paymentid
+         JOIN advertisement a ON p.advertisementId = a.id
 WHERE a.id = @AdvertId;

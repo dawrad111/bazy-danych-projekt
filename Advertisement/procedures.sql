@@ -76,7 +76,7 @@ BEGIN
            p.creationDate,
            p.status
     FROM Payment p
-    JOIN Advertisement a ON p.Id = a.paymentid
+    JOIN Advertisement a ON p.advertisementId = a.id
     JOIN Users u ON a.userId = u.Id
     WHERE u.Id = user_id;
 END;
@@ -157,7 +157,7 @@ BEGIN
 
     -- Hide the advertisement
     UPDATE Advertisement
-    SET status = 'Hidden'
+    SET status = 'hidden'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement hidden successfully!';
@@ -182,7 +182,7 @@ BEGIN
 
     -- Suspend the advertisement
     UPDATE Advertisement
-    SET status = 'Suspended'
+    SET status = 'suspended'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement suspended successfully!';
@@ -206,7 +206,7 @@ BEGIN
 
     -- Update Advertisement status to 'Posted'
     UPDATE Advertisement
-    SET status = 'Posted'
+    SET status = 'posted'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement posted successfully!';
@@ -380,7 +380,7 @@ BEGIN
 
     -- Hide the advertisement
     UPDATE Advertisement
-    SET status = 'Hidden'
+    SET status = 'hidden'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement hidden successfully!';
