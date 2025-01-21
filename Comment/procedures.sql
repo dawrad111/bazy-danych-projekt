@@ -93,7 +93,7 @@ BEGIN
         RAISE EXCEPTION 'Error: Comment with ID % does not exist.', comment_id;
     END IF;
 
-    INSERT INTO bumpCount (
+    INSERT INTO bump_count (
         userId, commentId
     )
     VALUES (

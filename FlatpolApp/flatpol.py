@@ -2,8 +2,10 @@ import psycopg2
 import os
 from user_functions import authenticate_user
 from user_functions import register_user
-from advertisement_functions import display_advertisements
+import advertisement_functions
 import complaint_functions
+import comment_functions
+from geocoding_module import AddressGeocoder, GeocodingError
 
 def connect_to_db():
     try:
@@ -41,10 +43,9 @@ def main_operator_menu(connection, user):
         elif choice == "2":
             pass
         elif choice == "3":
-            if user:
-                complaint_functions.add_complaint(connection, user)
-            else:
-                print("This function is not allowed for guest")
+            advertisement_functions.hide_advertisement(connection)
+        elif choice == "4":
+            comment_functions.suspend_comment(connection, 9)
         elif choice == "0":
             print("Closing...")
             exit(0)
@@ -62,18 +63,64 @@ def main_user_menu(connection, user):
         print("\n=== Menu ===")
         print("1. Show advertisements")
         print("2. Create advertisement")
-        print("3. Create complaint")
+        print("3. Edit advertisement")
+        print("4. Create complaint")
+        print("5. Geolocation")
+        print("6. Show comments")
+        print("7. Add comments")
+        print("8. Like comment")
         print("0. Close")
 
         choice = input("Choose: ").strip()
 
         if choice == "1":
-            display_advertisements(connection, user)
+            advertisement_functions.display_advertisements(connection, user)
         elif choice == "2":
             pass
         elif choice == "3":
             if user:
+                advertisement_functions.edit_advertisement(connection, user)
+            else:
+                print("This function is not allowed for guest")
+        elif choice == "4":
+            if user:
                 complaint_functions.add_complaint(connection, user)
+            else:
+                print("This function is not allowed for guest")
+        elif choice == "5":
+            geocoder = AddressGeocoder(user_agent="your_application_name")
+
+            try:
+                # Get coordinates
+                location = geocoder.get_coordinates(
+                    country="France",
+                    city="Paris",
+                    street="Rue de Rivoli",
+                    number="1"
+                )
+
+                if location:
+                    print(f"Latitude: {location.latitude}")
+                    print(f"Longitude: {location.longitude}")
+                    print(f"Full address: {location.display_name}")
+                else:
+                    print("Location not found")
+
+            except GeocodingError as e:
+                print(f"Error: {e}")
+        elif choice == "6":
+            if user:
+                comment_functions.get_active_comments_for_advertisement(connection, 31)
+            else:
+                print("This function is not allowed for guest")
+        elif choice == "7":
+            if user:
+                comment_functions.add_comment(connection, user, 31)
+            else:
+                print("This function is not allowed for guest")
+        elif choice == "8":
+            if user:
+                comment_functions.add_bump(connection, user, 11)
             else:
                 print("This function is not allowed for guest")
         elif choice == "0":

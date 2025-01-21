@@ -157,7 +157,7 @@ BEGIN
 
     -- Hide the advertisement
     UPDATE Advertisement
-    SET status = 'hidden'
+    SET status = 'suspended'
     WHERE id = advertisement_id;
 
     RAISE NOTICE 'Advertisement hidden successfully!';

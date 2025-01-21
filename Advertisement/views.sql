@@ -16,7 +16,7 @@ FROM address a
 
 
 CREATE VIEW view_advertisements AS
-SELECT ad.city, ad.street, a.title, pr.price
+SELECT a.id, ad.city, ad.street, a.title, pr.price
 FROM advertisement a
          JOIN address ad ON a.addressId = ad.id
          JOIN price pr ON a.priceId = pr.id;

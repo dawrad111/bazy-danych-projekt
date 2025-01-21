@@ -1,6 +1,5 @@
 import psycopg2
 from psycopg2.extras import DictCursor
-import bcrypt
 from getpass import getpass
 
 def authenticate_user(connection):

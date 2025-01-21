@@ -14,3 +14,23 @@ FROM complaint
 INNER JOIN users u ON complaint.userId = u.id
 INNER JOIN email e ON u.emailid = e.id
 WHERE complaint.status = 'active';
+
+CREATE OR REPLACE VIEW view_active_comments AS
+SELECT
+    c.id AS comment_id,
+    c.userId AS user_id,
+    u.name AS user_name,
+    u.surname AS user_surname,
+    c.advertisementId AS advertisement_id,
+    c.postDate AS post_date,
+    c.lastModificationDate AS last_modification_date,
+    c.content AS comment_content
+FROM
+    comment c
+INNER JOIN
+    users u
+ON
+    c.userId = u.id
+WHERE
+    c.status = 'active';
+

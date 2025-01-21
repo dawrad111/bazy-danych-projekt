@@ -1,5 +1,5 @@
 import psycopg2
-
+from datetime import datetime
 
 def display_active_complaints(connection):
     print("\n=== Active Complaints ===")
@@ -8,7 +8,7 @@ def display_active_complaints(connection):
         with connection.cursor() as cursor:
             query = """
             SELECT content, postdate, name, surname, email
-            FROM ActiveComplaintsView;
+            FROM view_active_complaints;
             """
             cursor.execute(query)
             complaints = cursor.fetchall()
@@ -20,7 +20,7 @@ def display_active_complaints(connection):
             print(f"{'Date':<20} {'Name and surname':<30} {'Email':<30} {'Content':<50}")
             print("=" * 120)
             for content, postdate, name, surname, email in complaints:
-                print(f"{postdate:<20} {name} {surname:<30} {email:<30} {content:<50}")
+                print(f"{postdate.strftime("%Y-%m-%d %H:%M:%S"):<20} {name} {surname:<30} {email:<30} {content:<50}")
 
     except psycopg2.Error as e:
         print(f"Error during fetching complaints: {e}")
