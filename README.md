@@ -1,8 +1,17 @@
-## Database Schemas Recreation Instructions
+## Database Schemas Recreation
 
-
-- Create a container group with docker-compose
-- Create a database "Flatpol"
+- Clone repository on your machine
+- Create a container group being in project's root directory  
+```
+docker-compose up
+```
+- Create a database "Flatpol". Open adminer
+```
+localhost:8080
+```
+Log in with "postgres" as a username, "example" as a password and choose "Postgresql" as shown in the picture below.
+![Adminer login](instruction.png)
+- Recreate the all schemas, views and procedures.
 ```
 docker cp <path_to_backup_file> <container_name>:/tmp/backup.sql
 ```
@@ -13,24 +22,13 @@ docker exec -it <container_name> bash
 psql -U postgres -d Flatpol -f /tmp/backup.sql
 ```
 
-## Python database connection and sample usage
+## Python terminal app
+- Go to FlatpollApp directory and run
 ```
-import psycopg2
-
-try:
-    conn = psycopg2.connect(
-        dbname="Flatpol",
-        user="postgres",
-        password="example",
-        host="localhost,5432"
-    )
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM address_view LIMIT 50;")
-    rows = cur.fetchall()
-    for row in rows:
-        print(row)
-    cur.close()
-    conn.close()
-except Exception as e:
-    print(f"An error occurred: {e}")
+pip install geopy
+pip install psycopg2
+```
+- After packages installation run
+```
+python3 main.py
 ```
