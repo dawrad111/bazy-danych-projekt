@@ -115,12 +115,14 @@ def main_user_menu(connection, user):
                 print("This function is not allowed for guest")
         elif choice == "7":
             if user:
-                comment_functions.add_comment(connection, user, 31)
+                advertisementId = input("Provide advertisement ID to comment it:")
+                comment_functions.add_comment(connection, user, advertisementId)
             else:
                 print("This function is not allowed for guest")
         elif choice == "8":
             if user:
-                comment_functions.add_bump(connection, user, 11)
+                commentId = input("Provide comment ID to comment it:")
+                comment_functions.add_bump(connection, user, commentId)
             else:
                 print("This function is not allowed for guest")
         elif choice == "0":
